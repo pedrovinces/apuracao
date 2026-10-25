@@ -32,7 +32,7 @@ Publicado pelo GitHub Pages a partir da pasta `public/` (workflow em `.github/wo
 - Municípios: `ele2026/{cd}/config/mun-e{cd6}-cm.json`, `abr[]` (`cd` = UF) e `mu[]` (`cd`, `cdi`, `nm`).
 - O TSE responde CORS ecoando a origem, então o navegador lê direto, sem proxy.
 - A CDN do TSE ignora parâmetros na URL e guarda cada arquivo por até ~60 s (`cache-control: max-age` ≤ 60).
-  O painel confere o arquivo nacional a cada 10 s e, quando ele muda (`idg`), relê UFs e exterior na hora.
+  O painel confere o arquivo nacional a cada 5 s e, quando ele muda (`idg`), relê UFs e exterior na hora.
 - Exterior: UF `zz`, 186 cidades no `mun-...-cm.json` (sem `cdi`), arquivos `dados/zz/zz<cidade>-c0001-...-u.json`.
 - Fotos: `ele2026/6258/fotos/br/<sqcand>.jpeg`; recortadas com `tools/recortar-fotos.py` para `public/img`.
 

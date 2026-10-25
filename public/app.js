@@ -32,8 +32,8 @@ const SATURA = 40; // pontos percentuais de margem em que a cor chega ao máximo
 const MINIMO = 0.18; // intensidade mínima: vantagens pequenas também aparecem
 // A CDN do TSE guarda cada versão dos arquivos por até ~60 s e ignora parâmetros na URL;
 // abaixo disso ninguém que lê os arquivos públicos recebe antes. Por isso: o arquivo
-// nacional (pequeno) é conferido a cada 10 s e, quando muda, as UFs são lidas na hora.
-const T_BR = 10e3, T_COMPLETO = 60e3, T_MUN_UF = 60e3, T_MUN_BR = 180e3, T_MUN_MIN = 30e3;
+// nacional (pequeno) é conferido a cada 5 s e, quando muda, as UFs são lidas na hora.
+const T_BR = 5e3, T_COMPLETO = 60e3, T_MUN_UF = 60e3, T_MUN_BR = 180e3, T_MUN_MIN = 30e3;
 const T_RETENTA = 30e3, T_VERSAO = 60e3, PARALELO = 6;
 // Fechamento das urnas: 17h de Brasília (UTC-3, sem horário de verão) de 25/10/2026.
 // ?fechamento=<ISO> existe para testar a contagem em qualquer horário.
@@ -405,7 +405,7 @@ function desenharContagem() {
   } else {
     if (!el.classList.contains('fechadas')) {
       el.classList.add('fechadas');
-      el.innerHTML = `<span class="contagem-rotulo">Urnas fechadas</span><span class="aguardando">Aguardando a primeira divulgação do TSE<span class="pontos" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></span><span class="contagem-sub">O painel confere o TSE a cada 10 s e mostra os números assim que saírem.</span>`;
+      el.innerHTML = `<span class="contagem-rotulo">Urnas fechadas</span><span class="aguardando">Aguardando a primeira divulgação do TSE<span class="pontos" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></span><span class="contagem-sub">O painel confere o TSE a cada 5 s e mostra os números assim que saírem.</span>`;
     }
   }
 }
@@ -463,7 +463,7 @@ function desenharTabela() {
 }
 
 // ---------- leituras ----------
-// brPronto: resultado nacional que acabou de ser lido na conferência de 10 s (evita reler).
+// brPronto: resultado nacional que acabou de ser lido na conferência de 5 s (evita reler).
 async function atualizarEstados(brPronto = null) {
   const { ciclo, cd } = est.eleicao;
   const pedidos = [['br', brPronto ? Promise.resolve(brPronto) : lerResultado(ciclo, cd, 'br')], ...[...UFS, EXT].map((uf) => [uf, lerResultado(ciclo, cd, uf)])];
