@@ -446,6 +446,16 @@ function desenharTabela() {
   }
   linhas.sort((a, b) => (b.r?.totalCand || 0) - (a.r?.totalCand || 0) || a.nome.localeCompare(b.nome, 'pt-BR'));
   const total = linhas.length;
+  // Quantos locais já têm seções apuradas: explica os "–" de quem o TSE ainda não publicou.
+  const comApuracao = linhas.filter((l) => l.r && l.r.pst > 0).length;
+  const resumo = $('#resumo-tabela');
+  if (est.uf && publicado(est.br?.resultado)) {
+    const nome = est.uf === EXT ? 'cidades' : 'municípios';
+    resumo.hidden = false;
+    resumo.textContent = comApuracao < total
+      ? `${fmtInt.format(comApuracao)} de ${fmtInt.format(total)} ${nome} com apuração; ${est.uf === EXT ? 'as demais' : 'os demais'} aparecem com – até o TSE publicar.`
+      : `${est.uf === EXT ? 'Todas as' : 'Todos os'} ${fmtInt.format(total)} ${nome} com apuração.`;
+  } else resumo.hidden = true;
   if (est.uf) linhas = linhas.slice(0, est.limiteTabela);
   const tabela = est.uf || 'br';
   tbody.innerHTML = linhas.map(({ chave, nome, uf, r }) => {
@@ -563,6 +573,16 @@ async function cicloMunicipios() {
   };
   await Promise.all(Array.from({ length: PARALELO }, trabalhador));
   if (geracao !== carga.geracao) return;
+  // Leituras recusadas no pico (429) ou com erro: mais uma tentativa, uma por vez, no fim
+  // da rodada, em vez de deixar o local com "–" até a rodada seguinte.
+  const faltaram = alvo.filter((m) => !est.mun.get(m.cd)?.resultado);
+  for (const m of faltaram) {
+    if (geracao !== carga.geracao) return;
+    await new Promise((r) => setTimeout(r, 250));
+    const res = await lerResultado(est.eleicao.ciclo, est.eleicao.cd, m.uf, m.cd);
+    if (res.resultado) { est.mun.set(m.cd, res); falhas--; }
+  }
+  if (geracao !== carga.geracao) return;
   carga.ativa = false;
   mostrar();
   setTimeout(() => { if (geracao === carga.geracao) $('#progresso').hidden = true; }, 2500);
@@ -655,8 +675,9 @@ function desenharNota() {
     resumo = 'Votação encerrada às 19h · aguardando o TSE retomar a divulgação';
     detalhe = `A votação foi prorrogada pelo STF de 17h para 19h.${ok && tTse ? ` Os números na tela ainda são a parcial de ${pct(r.pst)} divulgada às ${hhmm(tTse)}.` : ''} Assim que o TSE publicar a próxima parcial, o painel atualiza sozinho.`;
   } else {
-    resumo = 'A votação foi prorrogada até 19h pelo STF';
-    detalhe = 'Por decisão do ministro Cristiano Zanin, do STF, as seções receberam votos até as 19h de Brasília, duas horas além do previsto.';
+    // TSE retomou depois das 19h: a faixa sai da tela.
+    el.hidden = true;
+    return;
   }
   // Dados parados: durante a apuração, a última parcial do TSE tem mais de 10 min
   // (pelo horário gravado no próprio arquivo, não pelo momento em que a página abriu).
