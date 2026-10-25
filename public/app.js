@@ -38,7 +38,10 @@ const T_BR = 5e3, T_COMPLETO = 60e3, T_MUN_UF = 60e3, T_MUN_BR = 180e3, T_MUN_MI
 const T_RETENTA = 30e3, T_VERSAO = 60e3, PARALELO = 6;
 // Fechamento das urnas: 17h de Brasília (UTC-3, sem horário de verão) de 25/10/2026.
 // ?fechamento=<ISO> existe para testar a contagem em qualquer horário.
-const FECHAMENTO = new Date(new URLSearchParams(location.search).get('fechamento') || '2026-10-25T17:00:00-03:00').getTime();
+// Prorrogado para 19h por decisão do STF (ministro Cristiano Zanin) no dia da eleição.
+const FECHAMENTO = new Date(new URLSearchParams(location.search).get('fechamento') || '2026-10-25T19:00:00-03:00').getTime();
+const FECHAMENTO_ORIGINAL = new Date('2026-10-25T17:00:00-03:00').getTime();
+const PARADO_MIN = 10; // minutos sem nova versão do TSE para avisar que os dados estão parados
 
 const params = new URLSearchParams(location.search);
 const DEMO = params.get('demo') === '1';
@@ -413,7 +416,7 @@ function desenharContagem() {
   if (falta > 0) {
     const t = Math.floor(falta / 1000);
     const hh = String(Math.floor(t / 3600)).padStart(2, '0'), mm = String(Math.floor((t % 3600) / 60)).padStart(2, '0'), ss = String(t % 60).padStart(2, '0');
-    if (!el.querySelector('.relogio')) el.innerHTML = `<span class="contagem-rotulo">As urnas fecham em</span><span class="relogio" role="timer"></span><span class="contagem-sub">às 17h de Brasília. O TSE começa a divulgar o resultado logo depois.</span>`;
+    if (!el.querySelector('.relogio')) el.innerHTML = `<span class="contagem-rotulo">As urnas fecham em</span><span class="relogio" role="timer"></span><span class="contagem-sub">às 19h de Brasília (votação prorrogada pelo STF). O TSE começa a divulgar o resultado logo depois.</span>`;
     el.querySelector('.relogio').innerHTML = `${hh}<i>:</i>${mm}<i>:</i>${ss}`;
     el.classList.remove('fechadas');
   } else {
@@ -593,7 +596,8 @@ async function iniciarDados() {
     else aviso('');
     desenharContagem();
     desenharPlacar(); atualizarDiag();
-    setTimeout(iniciarDados, T_RETENTA);
+    // Falha por pico (429) ou rede: tenta logo; sem 2º turno publicado: espera mais.
+    setTimeout(iniciarDados, d.testadas?.some((t) => t.status === 429 || t.status === 'erro de rede') ? 5e3 : T_RETENTA);
     return;
   }
   est.eleicao = { ciclo: d.ciclo, cd: d.cd, nm: d.nm };
@@ -626,8 +630,48 @@ document.addEventListener('visibilitychange', () => {
 // "há 7 s": mostra que o painel está vivo mesmo quando o TSE não publicou nada novo.
 // Indicador "ao vivo": ponto pulsando, idade da última conferência e um anel que enche
 // até a próxima. Enquanto a leitura está em curso, o ponto pisca rápido ("consultando").
+// Faixa discreta sobre a prorrogação. A fase sai do relógio e do horário do próprio
+// arquivo do TSE (hg/dg); o aviso de dados parados sai do tempo sem nova versão (idg).
+function horaTse(r) {
+  const m = r?.dg && r?.hg && r.dg.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  return m ? new Date(`${m[3]}-${m[2]}-${m[1]}T${r.hg}-03:00`).getTime() : null;
+}
+const hhmm = (t) => new Date(t).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+function desenharNota() {
+  const el = $('#nota');
+  const r = est.br?.resultado;
+  if (DEMO || !est.eleicao) { el.hidden = true; return; }
+  const agora = Date.now();
+  const tTse = horaTse(r);
+  const ok = publicado(r);
+  let resumo, detalhe;
+  if (agora < FECHAMENTO) {
+    resumo = 'Votação prorrogada até 19h (STF)';
+    if (ok && tTse) resumo += ` · parcial de ${pct(r.pst)} divulgada às ${hhmm(tTse)}`;
+    detalhe = 'O ministro Cristiano Zanin, do STF, prorrogou o fim da votação para as 19h de Brasília em todo o país. '
+      + (ok ? `O TSE já tinha divulgado ${pct(r.pst)} das seções às ${hhmm(tTse)}, antes da prorrogação. É uma fração mínima da apuração e não indica o resultado; os eleitores ainda estão votando. ` : '')
+      + 'O painel continua conferindo o TSE a cada 5 s.';
+  } else if (!tTse || tTse < FECHAMENTO) {
+    resumo = 'Votação encerrada às 19h · aguardando o TSE retomar a divulgação';
+    detalhe = `A votação foi prorrogada pelo STF de 17h para 19h.${ok && tTse ? ` Os números na tela ainda são a parcial de ${pct(r.pst)} divulgada às ${hhmm(tTse)}.` : ''} Assim que o TSE publicar a próxima parcial, o painel atualiza sozinho.`;
+  } else {
+    resumo = 'A votação foi prorrogada até 19h pelo STF';
+    detalhe = 'Por decisão do ministro Cristiano Zanin, do STF, as seções receberam votos até as 19h de Brasília, duas horas além do previsto.';
+  }
+  // Dados parados: durante a apuração, a última parcial do TSE tem mais de 10 min
+  // (pelo horário gravado no próprio arquivo, não pelo momento em que a página abriu).
+  const parado = ok && r.pst < 100 && tTse && agora - tTse > PARADO_MIN * 60e3;
+  if (parado && tTse) resumo += ` · sem novos dados do TSE desde ${hhmm(tTse)}`;
+  el.hidden = false;
+  el.classList.toggle('discreta', agora >= FECHAMENTO && tTse && tTse >= FECHAMENTO);
+  const sum = el.querySelector('summary'), p = el.querySelector('p');
+  if (sum.textContent !== resumo) sum.textContent = resumo;
+  if (p.textContent !== detalhe) p.textContent = detalhe;
+}
+
 function atualizarIdade() {
   desenharContagem();
+  desenharNota();
   const el = $('#aovivo');
   if (!est.ultimaConferencia || !est.eleicao) return;
   el.hidden = false;

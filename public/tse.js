@@ -47,7 +47,14 @@ export async function lerJSON(caminho) {
       if (res) { modo = 'proxy'; return fim(res, 'proxy'); }
       modo = 'direto';
     }
-    return fim(await lerDireto(caminho), 'direto');
+    // 429 = o TSE pediu para esperar (pico de acessos). Tenta de novo até 3 vezes, com
+    // espera crescente e sorteada, para os visitantes não voltarem todos no mesmo instante.
+    let res = await lerDireto(caminho);
+    for (let i = 0; res.status === 429 && i < 3; i++) {
+      await new Promise((r) => setTimeout(r, (600 << i) + Math.random() * 700));
+      res = await lerDireto(caminho);
+    }
+    return fim(res, 'direto');
   } catch (e) {
     return fim({ status: 'erro de rede', dados: null }, modo || 'direto');
   }

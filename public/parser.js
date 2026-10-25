@@ -108,16 +108,18 @@ const MODELOS = [
   (ciclo, cd, uf, mun) => `${ciclo}/${cd}/dados/${uf}/${uf}${mun}-c0001-e${pad6(cd)}-u.json`,
   (ciclo, cd, uf, mun) => `${ciclo}/${cd}/dados-simplificados/${uf}/${uf}${mun}-c0001-e${pad6(cd)}-r.json`,
 ];
-let modeloBom = 0;
+let modeloBom = 0, modeloConfirmado = false;
 
 // Lê um resultado tentando os modelos; o primeiro que responder 200 vira o padrão.
 export async function lerResultado(ciclo, cd, uf, mun = '') {
   uf = uf.toLowerCase();
-  const ordem = [modeloBom, ...MODELOS.keys()].filter((v, i, a) => a.indexOf(v) === i);
+  // Depois que um formato funcionou, não sonda o outro a cada 404 (no pico, cada leitura
+  // extra aumenta a chance de o TSE responder 429).
+  const ordem = modeloConfirmado ? [modeloBom] : [modeloBom, ...MODELOS.keys()].filter((v, i, a) => a.indexOf(v) === i);
   let ultimo = { status: 404, dados: null };
   for (const i of ordem) {
     const res = await lerJSON(MODELOS[i](ciclo, cd, uf, mun));
-    if (res.status === 200 && res.dados) { modeloBom = i; return { status: 200, resultado: interpretar(res.dados) }; }
+    if (res.status === 200 && res.dados) { modeloBom = i; modeloConfirmado = true; return { status: 200, resultado: interpretar(res.dados) }; }
     ultimo = res;
     if (res.status !== 404 && res.status !== 403) break; // erro de rede: não adianta trocar de modelo
   }
@@ -151,12 +153,20 @@ export async function descobrirEleicao(ciclo = 'ele2026', forcar = null) {
   const cfg = await lerJSON('comum/config/ele-c.json');
   if (cfg.status !== 200 || !cfg.dados) return { ok: false, motivo: 'config', status: cfg.status, testadas: [] };
   const lista = eleicoesDoCiclo(cfg.dados, ciclo);
-  const candidatas = forcar ? [{ cd: String(Number(forcar)), nm: 'forçada por ?e=' }] : lista;
-  const testadas = await Promise.all(candidatas.map(async (el) => {
+  // Ordem de teste: 2º turno de eleição federal primeiro (onde está o presidente), depois
+  // os demais 2º turnos e o resto, do maior código ao menor. Testa um por vez e para no
+  // primeiro arquivo com 2 candidatos: no pico, 30 leituras simultâneas viravam 429.
+  const peso = (el) => (/federal/i.test(el.nm) ? 0 : 2) + (/2º turno/i.test(el.nm) ? 0 : 1);
+  const candidatas = forcar ? [{ cd: String(Number(forcar)), nm: 'forçada por ?e=' }]
+    : lista.slice().sort((a, b) => peso(a) - peso(b) || Number(b.cd) - Number(a.cd));
+  const testadas = [];
+  let achada = null;
+  for (const el of candidatas) {
     const r = await lerResultado(ciclo, el.cd, 'br');
-    return { ...el, status: r.status, nCand: r.resultado ? r.resultado.cand.length : null, resultado: r.resultado };
-  }));
-  const achada = testadas.find((t) => t.nCand === 2) || (forcar ? testadas.find((t) => t.resultado) : null);
+    const t = { ...el, status: r.status, nCand: r.resultado ? r.resultado.cand.length : null, resultado: r.resultado };
+    testadas.push(t);
+    if (t.nCand === 2 || (forcar && t.resultado)) { achada = t; break; }
+  }
   if (!achada) return { ok: false, motivo: lista.length ? 'sem2turno' : 'semciclo', testadas, lista };
   return { ok: true, ciclo, cd: achada.cd, nm: achada.nm, testadas, lista, br: achada.resultado };
 }

@@ -228,6 +228,16 @@ td.sem { color: var(--suave); }
 @keyframes festa-pulsa { 50% { transform: scale(1.06); } }
 @media (prefers-reduced-motion: reduce) { .festa *, .festa { animation: none !important; } }
 
+/* Nota discreta (prorrogação da votação): uma linha, abre ao tocar. */
+.nota { margin: 0 0 10px; border: 1px solid #f1d28a; background: #fffaf0; color: #7a4a00; border-radius: 10px; font-size: 13px; }
+.nota summary { cursor: pointer; padding: 8px 12px; list-style: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nota summary::-webkit-details-marker { display: none; }
+.nota summary::before { content: "ⓘ "; font-weight: 700; }
+.nota[open] summary { white-space: normal; }
+.nota p { margin: 0; padding: 0 12px 10px; color: var(--texto); line-height: 1.45; }
+.nota.discreta { background: transparent; border-color: var(--borda); color: var(--suave); }
+@media (prefers-color-scheme: dark) { .nota { background: #2b2210; border-color: #5b4515; color: #f6d38c; } }
+
 /* Contagem até o fechamento das urnas. */
 .contagem {
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px;
@@ -324,7 +334,7 @@ tr.linha-mudou { animation: faixa 2.4s ease-out; }
   .cand { column-gap: 14px; }
   .cand-nome { font-size: 18px; }
   main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 0 16px; align-items: start; }
-  .aviso, .contagem, .aovivo, .numeros, .horarios, .exterior-cartao, .controles, .progresso { grid-column: 1 / -1; }
+  .aviso, .nota, .contagem, .aovivo, .numeros, .horarios, .exterior-cartao, .controles, .progresso { grid-column: 1 / -1; }
   .exterior-cartao { max-width: 560px; }
   .numeros { max-width: 560px; }
   table { font-size: 14px; }
