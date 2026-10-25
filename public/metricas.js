@@ -1,6 +1,6 @@
 // Métricas de audiência com o Umami Cloud: sem cookies (dispensa aviso de consentimento)
 // e sem guardar dados pessoais. O ID do site é público; não é senha.
-const UMAMI_ID = '';
+const UMAMI_ID = '31bbb266-b32d-45b5-8961-b54b7b4b333a';
 const DOMINIO = 'apuracao.pedrovinces.com.br';
 
 // Marcos de tempo com a página VISÍVEL. Intervalos de até 30 min entre marcos, porque o
