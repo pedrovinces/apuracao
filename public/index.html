@@ -29,6 +29,7 @@
     <div class="cand c13" data-n="13"><div class="cand-nome">Lula <small>PT · 13</small></div><img class="cand-foto" src="img/13.webp?v=dev" alt="" width="172" height="240" decoding="async"><div class="cand-pct">–</div><div class="cand-votos">&nbsp;</div></div>
     <div class="cand c22" data-n="22"><div class="cand-nome">Flávio Bolsonaro <small>PL · 22</small></div><img class="cand-foto" src="img/22.webp?v=dev" alt="" width="172" height="240" decoding="async"><div class="cand-pct">–</div><div class="cand-votos">&nbsp;</div></div>
   </div>
+  <div id="definicao" class="definicao" hidden></div>
   <div class="barra-disputa" id="barra-disputa" aria-hidden="true"><span class="b13"></span><span class="b22"></span><i class="meio"></i></div>
   <div class="linha-apurado">
     <div class="apurado-rotulo"><span id="apurado-txt">Seções apuradas: –</span><span id="diferenca-txt"></span></div>
@@ -38,8 +39,10 @@
 
 <main>
   <div id="aviso" class="aviso" hidden></div>
+  <section id="contagem" class="contagem" aria-live="polite" hidden></section>
 
   <dl class="numeros" id="numeros"></dl>
+  <p class="aovivo" id="aovivo" hidden><span class="pulso" aria-hidden="true"></span><span id="aovivo-txt">Ao vivo</span><span class="anel" id="anel" aria-hidden="true"></span><span id="proxima"></span></p>
   <p class="horarios" id="horarios"></p>
   <button type="button" id="exterior-cartao" class="exterior-cartao" aria-pressed="false"></button>
 

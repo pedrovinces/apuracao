@@ -177,6 +177,55 @@ td.v13 .lid, td.dif13 { color: var(--t13); } td.v22 .lid, td.dif22 { color: var(
 td.sem { color: var(--suave); }
 .pct-apur { color: var(--suave); }
 
+/* Faixa de definição no placar: sólida na cor do candidato quando o TSE confirma;
+   contornada quando é o cálculo matemático (certeza aritmética, mas ainda não oficial). */
+.definicao { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin: 8px 0 0; padding: 7px 10px; border-radius: 10px; font-size: 13px; line-height: 1.3; }
+.definicao b { font-size: 14px; }
+.definicao.oficial { background: var(--cor); color: #fff; animation: entrar .5s ease-out; }
+.definicao.oficial span { opacity: .9; }
+.definicao.calculo { border: 2px solid var(--cor); color: var(--texto); background: color-mix(in srgb, var(--cor) 9%, transparent); }
+.definicao.calculo span { color: var(--suave); }
+/* No celular o placar fixo não pode crescer muito: texto curto; números completos na tela larga e no title. */
+.definicao .longo { display: none; }
+@media (min-width: 900px) { .definicao .longo { display: inline; } .definicao .curto { display: none; } }
+@keyframes entrar { from { transform: scale(.96); opacity: 0; } }
+
+/* Contagem até o fechamento das urnas. */
+.contagem {
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px;
+  background: var(--cartao); border: 1px solid var(--borda); border-radius: var(--raio); box-shadow: var(--sombra);
+  padding: 14px 16px 12px; margin-bottom: 12px;
+}
+.contagem-rotulo { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--suave); }
+.relogio { font-size: 44px; font-weight: 800; letter-spacing: -.01em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.relogio i { font-style: normal; color: var(--suave); animation: piscar 1s steps(1, end) infinite; }
+@keyframes piscar { 50% { opacity: .25; } }
+.contagem-sub { font-size: 13px; color: var(--suave); max-width: 34ch; }
+.aguardando { font-size: 19px; font-weight: 700; margin: 2px 0; }
+.pontos i { font-style: normal; animation: ponto 1.4s infinite; opacity: .2; }
+.pontos i:nth-child(2) { animation-delay: .2s; } .pontos i:nth-child(3) { animation-delay: .4s; }
+@keyframes ponto { 30% { opacity: 1; } 60% { opacity: .2; } }
+
+/* Indicador ao vivo: ponto com onda (radar), texto com a idade da conferência e um anel
+   que enche em 10 s até a próxima leitura. */
+.aovivo { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--suave); margin: 0 0 4px; }
+.aovivo b { color: #16a34a; }
+@media (prefers-color-scheme: dark) { .aovivo b { color: #4ade80; } }
+.pulso { position: relative; flex: none; width: 10px; height: 10px; border-radius: 50%; background: #16a34a; }
+.pulso::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: #16a34a; animation: onda 2s ease-out infinite; }
+@keyframes onda { from { transform: scale(1); opacity: .6; } to { transform: scale(3.2); opacity: 0; } }
+.aovivo.lendo .pulso { animation: piscar .5s steps(1, end) infinite; }
+@property --p { syntax: '<number>'; inherits: false; initial-value: 0; }
+.anel {
+  flex: none; width: 14px; height: 14px; border-radius: 50%; margin-left: auto;
+  background: conic-gradient(var(--texto) calc(var(--p) * 1%), var(--borda) 0);
+  -webkit-mask: radial-gradient(circle, transparent 3.5px, #000 4px); mask: radial-gradient(circle, transparent 3.5px, #000 4px);
+  animation: encher 10s linear forwards;
+}
+@keyframes encher { from { --p: 0; } to { --p: 100; } }
+#proxima { flex: none; font-size: 12px; min-width: 9ch; }
+@media (prefers-reduced-motion: reduce) { .pulso::after, .relogio i, .pontos i { animation: none; } .pontos i { opacity: 1; } }
+
 /* Sinalização de número que acabou de mudar: brilho que some em 2,4 s. Nas colunas de
    candidato o brilho tem a cor dele; nas demais, âmbar neutro. A linha ganha uma faixa
    lateral, que guia o olho até onde houve mudança numa tabela longa. */
@@ -237,7 +286,7 @@ tr.linha-mudou { animation: faixa 2.4s ease-out; }
   .cand { column-gap: 14px; }
   .cand-nome { font-size: 18px; }
   main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 0 16px; align-items: start; }
-  .aviso, .numeros, .horarios, .exterior-cartao, .controles, .progresso { grid-column: 1 / -1; }
+  .aviso, .contagem, .aovivo, .numeros, .horarios, .exterior-cartao, .controles, .progresso { grid-column: 1 / -1; }
   .exterior-cartao { max-width: 560px; }
   .numeros { max-width: 560px; }
   table { font-size: 14px; }

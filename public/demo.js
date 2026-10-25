@@ -92,9 +92,9 @@ export function criarDemo(municipiosGeo) {
     const hora = agora.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour12: false });
     const data = agora.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
     const tb = totalBr(pBr);
-    // Matematicamente definido quando a vantagem nacional supera todo o comparecimento que falta.
-    const faltam = Math.max(0, tb.te * 0.8 - tb.c);
-    const definido = pBr >= 1 || Math.abs(tb.v13 - tb.v22) > faltam;
+    // O "TSE" fictício confirma o eleito um pouco depois de a vantagem superar o eleitorado
+    // ainda não apurado; assim o modo demo mostra os dois estados (definido e eleito).
+    const definido = pBr >= 1 || Math.abs(tb.v13 - tb.v22) > (tb.te - tb.esa) * 1.15;
     const lider = tb.v13 >= tb.v22 ? '13' : '22';
     const cand = (n, nm, nmu, sg, votos) => ({
       n, sqcand: '9' + n, nm, nmu, seq: n === '13' ? '1' : '2',
@@ -111,7 +111,7 @@ export function criarDemo(municipiosGeo) {
         { n: '2', nm: 'PARTIDO FICTÍCIO B', tp: 'i', par: [{ n: '22', sg: 'PL', cand: [cand('22', 'FLAVIO NANTES BOLSONARO', 'FLAVIO BOLSONARO', 'PL', s.v22)] }] },
       ] }],
       s: { ts: String(s.ts), st: String(s.st), pst: br(pc(s.st, s.ts)), pstn: String(pc(s.st, s.ts)) },
-      e: { te: String(s.te), est: String(s.esa), c: String(s.c), pc: br(pc(s.c, s.esa)), a: String(s.esa - s.c), pa: br(pc(s.esa - s.c, s.esa)), pan: String(pc(s.esa - s.c, s.esa)) },
+      e: { te: String(s.te), est: String(s.esa), esnt: String(s.te - s.esa), c: String(s.c), pc: br(pc(s.c, s.esa)), a: String(s.esa - s.c), pa: br(pc(s.esa - s.c, s.esa)), pan: String(pc(s.esa - s.c, s.esa)) },
       v: { tv: String(s.c), vv: String(s.validos), pvv: br(pc(s.validos, s.c)), vb: String(s.brancos), pvb: br(pc(s.brancos, s.c)), pvbn: String(pc(s.brancos, s.c)), tvn: String(s.nulos), ptvn: br(pc(s.nulos, s.c)), ptvnn: String(pc(s.nulos, s.c)) },
     };
     if (cd === 900) { // 1º turno fictício com 4 candidatos: a descoberta precisa descartá-lo

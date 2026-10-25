@@ -91,6 +91,8 @@ export function interpretar(dados) {
     pBrancos: num(achar(v, 'pvbn')) ?? num(achar(v, 'pvb')),
     nulos: num(achar(v, 'tvn')),
     pNulos: num(achar(v, 'ptvnn')) ?? num(achar(v, 'ptvn')),
+    // Eleitores das seções ainda não totalizadas: teto de votos que ainda podem entrar.
+    naoApurados: num(achar(eleitorado || dados, 'esnt')),
     abstencao: num(achar(eleitorado || dados, 'a')),
     pAbstencao: num(achar(eleitorado || dados, 'pan')) ?? num(achar(eleitorado || dados, 'pa')),
     definida: md === 's' || md === 'e' || cand.some((c) => c.eleito),

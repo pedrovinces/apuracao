@@ -35,7 +35,9 @@ const MINIMO = 0.18; // intensidade mínima: vantagens pequenas também aparecem
 // nacional (pequeno) é conferido a cada 10 s e, quando muda, as UFs são lidas na hora.
 const T_BR = 10e3, T_COMPLETO = 60e3, T_MUN_UF = 60e3, T_MUN_BR = 180e3, T_MUN_MIN = 30e3;
 const T_RETENTA = 30e3, T_VERSAO = 60e3, PARALELO = 6;
-const MSG_ANTES = 'O TSE ainda não publicou o resultado; a divulgação começa após o fechamento das urnas (17h de Brasília).';
+// Fechamento das urnas: 17h de Brasília (UTC-3, sem horário de verão) de 25/10/2026.
+// ?fechamento=<ISO> existe para testar a contagem em qualquer horário.
+const FECHAMENTO = new Date(new URLSearchParams(location.search).get('fechamento') || '2026-10-25T17:00:00-03:00').getTime();
 
 const params = new URLSearchParams(location.search);
 const DEMO = params.get('demo') === '1';
@@ -326,6 +328,7 @@ function desenharPlacar() {
       votos.querySelector('.selo-lugar').innerHTML = c.eleito ? ' <span class="selo">ELEITO</span>' : '';
     } else votos.innerHTML = '&nbsp;';
   }
+  desenharDefinicao(r, ok);
   const c13 = doNumero(r, '13'), c22 = doNumero(r, '22');
   $('#barra-disputa .b13').style.width = ok && c13 ? c13.pct + '%' : '0';
   $('#barra-disputa .b22').style.width = ok && c22 ? c22.pct + '%' : '0';
@@ -349,7 +352,6 @@ function desenharPlacar() {
   if (ok && r.nulos != null) itens.push(item('Nulos', r.pNulos, r.nulos));
   const horas = [];
   if (r?.dg) horas.push(`TSE: <b>${escapar(r.hg || '')}</b> de ${escapar(r.dg)}`);
-  if (est.ultimaConferencia) horas.push(`conferido <b id="idade">agora</b> (a cada 10 s)`);
   $('#horarios').innerHTML = horas.join(' · ');
   $('#numeros').innerHTML = itens.map(([t, v, texto]) => {
     const b = attrsBrilho(marca('num|' + t, texto));
@@ -362,6 +364,50 @@ function desenharPlacar() {
   else if (!ok) pil.textContent = 'aguardando o TSE';
   else if (r.pst >= 100 || r.totalizada) { pil.textContent = 'totalizado'; pil.classList.add('final'); }
   else { pil.textContent = 'ao vivo'; pil.classList.add('vivo'); }
+}
+
+// Faixa de definição no placar. Duas situações, com graus de certeza diferentes:
+// o TSE marcou o eleito (oficial) ou a conta fecha antes disso: a vantagem do líder já é
+// maior que o número de eleitores das seções ainda não apuradas, então nem que todos
+// votassem no segundo colocado ele alcançaria o primeiro.
+function desenharDefinicao(r, ok) {
+  const el = $('#definicao');
+  if (!ok || r.cand.length < 2) { el.hidden = true; return; }
+  const [a, b] = r.cand;
+  const eleito = r.cand.find((c) => c.eleito);
+  const vantagem = a.votos - b.votos;
+  const matematico = !eleito && r.naoApurados != null && r.pst < 100 && vantagem > r.naoApurados;
+  if (!eleito && !matematico) { el.hidden = true; return; }
+  const c = eleito || a;
+  el.hidden = false;
+  el.className = 'definicao ' + (eleito ? 'oficial' : 'calculo');
+  el.style.setProperty('--cor', CAND[c.n]?.cor || '#555');
+  el.innerHTML = eleito
+    ? `<b>${escapar(nomeCand(c))} está eleito presidente</b><span>confirmado pelo TSE</span>`
+    : `<b>Matematicamente definido: ${escapar(nomeCand(c))}</b><span class="longo">vantagem de ${fmtInt.format(vantagem)} votos é maior que os ${fmtInt.format(r.naoApurados)} eleitores das seções que faltam · aguardando o TSE</span><span class="curto">vantagem já supera todos os eleitores que faltam · aguardando o TSE</span>`;
+  el.title = `Vantagem de ${fmtInt.format(vantagem)} votos; eleitores nas seções não apuradas: ${fmtInt.format(r.naoApurados ?? 0)}.`;
+}
+
+// Contagem regressiva até o fechamento das urnas; depois, "aguardando o TSE"; some quando
+// os primeiros números aparecem.
+function desenharContagem() {
+  const el = $('#contagem');
+  const publicadoBr = publicado(est.br?.resultado);
+  if (publicadoBr || DEMO) { el.hidden = true; return; }
+  el.hidden = false;
+  const falta = FECHAMENTO - Date.now();
+  if (falta > 0) {
+    const t = Math.floor(falta / 1000);
+    const hh = String(Math.floor(t / 3600)).padStart(2, '0'), mm = String(Math.floor((t % 3600) / 60)).padStart(2, '0'), ss = String(t % 60).padStart(2, '0');
+    if (!el.querySelector('.relogio')) el.innerHTML = `<span class="contagem-rotulo">As urnas fecham em</span><span class="relogio" role="timer"></span><span class="contagem-sub">às 17h de Brasília. O TSE começa a divulgar o resultado logo depois.</span>`;
+    el.querySelector('.relogio').innerHTML = `${hh}<i>:</i>${mm}<i>:</i>${ss}`;
+    el.classList.remove('fechadas');
+  } else {
+    if (!el.classList.contains('fechadas')) {
+      el.classList.add('fechadas');
+      el.innerHTML = `<span class="contagem-rotulo">Urnas fechadas</span><span class="aguardando">Aguardando a primeira divulgação do TSE<span class="pontos" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></span><span class="contagem-sub">O painel confere o TSE a cada 10 s e mostra os números assim que saírem.</span>`;
+    }
+  }
 }
 
 function aviso(msg, erro = false) {
@@ -432,13 +478,14 @@ async function atualizarEstados(brPronto = null) {
     if (chave === 'br') est.statusBr = s.value.status;
   });
   est.ultimaLeitura = est.ultimaConferencia = new Date();
+  reiniciarAnel();
   est.ultimoCompleto = Date.now();
   est.assinaturaBr = assinatura(est.br?.resultado);
   const r = est.br?.resultado;
-  if (est.statusBr === 404 || (r && !publicado(r))) aviso(MSG_ANTES);
+  if (est.statusBr === 404 || (r && !publicado(r))) aviso('');
   else if (!r) aviso(`Não foi possível ler o resultado nacional (situação: ${est.statusBr}). Nova tentativa em 30 s.`, true);
   else aviso('');
-  desenharPlacar(); pintarMapa(); desenharTabela(); desenharExterior(); atualizarDiag();
+  desenharPlacar(); pintarMapa(); desenharTabela(); desenharExterior(); desenharContagem(); atualizarDiag();
 }
 
 // Identifica uma versão do arquivo nacional: idg é o identificador de geração do TSE.
@@ -447,8 +494,11 @@ const assinatura = (r) => (r ? [r.idg, r.dg, r.hg, r.pst, r.totalCand].join('|')
 // Conferência rápida: lê só o arquivo nacional; se mudou (ou passou 1 min), lê tudo.
 async function conferirBr() {
   const { ciclo, cd } = est.eleicao;
+  $('#aovivo').classList.add('lendo');
   const res = await lerResultado(ciclo, cd, 'br');
+  $('#aovivo').classList.remove('lendo');
   est.ultimaConferencia = new Date();
+  reiniciarAnel();
   const mudou = res.resultado && assinatura(res.resultado) !== est.assinaturaBr;
   if (mudou || Date.now() - est.ultimoCompleto >= T_COMPLETO) {
     await atualizarEstados(res);
@@ -526,7 +576,8 @@ async function iniciarDados() {
   est.descoberta = d;
   if (!d.ok) {
     if (d.motivo === 'config') aviso(`A configuração das eleições do TSE ainda não está disponível (situação: ${d.status}). Nova tentativa em 30 s.`);
-    else aviso(MSG_ANTES + ' Nova tentativa em 30 s.');
+    else aviso('');
+    desenharContagem();
     desenharPlacar(); atualizarDiag();
     setTimeout(iniciarDados, T_RETENTA);
     return;
@@ -559,11 +610,22 @@ document.addEventListener('visibilitychange', () => {
 });
 
 // "há 7 s": mostra que o painel está vivo mesmo quando o TSE não publicou nada novo.
+// Indicador "ao vivo": ponto pulsando, idade da última conferência e um anel que enche
+// até a próxima. Enquanto a leitura está em curso, o ponto pisca rápido ("consultando").
 function atualizarIdade() {
-  const el = $('#idade');
-  if (!el || !est.ultimaConferencia) return;
+  desenharContagem();
+  const el = $('#aovivo');
+  if (!est.ultimaConferencia || !est.eleicao) return;
+  el.hidden = false;
   const s = Math.max(0, Math.round((Date.now() - est.ultimaConferencia) / 1000));
-  el.textContent = s < 2 ? 'agora' : `há ${s} s`;
+  const lendo = el.classList.contains('lendo');
+  const parado = document.hidden;
+  $('#aovivo-txt').innerHTML = lendo ? '<b>Ao vivo</b> · consultando o TSE…' : `<b>Ao vivo</b> · conferido ${s < 2 ? 'agora' : `há ${s} s`}`;
+  $('#proxima').textContent = parado ? '' : `próxima em ${Math.max(0, Math.ceil((T_BR - (Date.now() - est.ultimaConferencia)) / 1000))} s`;
+}
+function reiniciarAnel() {
+  const anel = $('#anel');
+  anel.style.animation = 'none'; void anel.offsetWidth; anel.style.animation = '';
 }
 setInterval(atualizarIdade, 1000);
 
