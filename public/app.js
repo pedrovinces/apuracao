@@ -172,8 +172,8 @@ function fichaHtml(titulo, sub, r, acao = '') {
 function desenharExterior() {
   const r = resultadoUf(EXT);
   const ok = publicado(r);
-  const partes = ok ? ORDEM.map((n) => { const c = doNumero(r, n); return c ? `<b style="color:var(--t${n})">${CAND[n].nome.split(' ')[0]} ${pct(c.pct, 1)}</b>` : ''; }).join(' · ') : 'aguardando o TSE';
-  const b = attrsBrilho(ok ? marca('ext|cartao', partes + pct(r.pst, 0)) : null);
+  const partes = ok ? ORDEM.map((n) => { const c = doNumero(r, n); return c ? `<b style="color:var(--t${n})">${CAND[n].nome.split(' ')[0]} ${numHtml('ext|' + n, c.pct, 'pct1')}</b>` : ''; }).join(' · ') : 'aguardando o TSE';
+  const b = attrsBrilho(ok ? marca('ext|cartao', r.cand.map((c) => pct(c.pct, 1)).join() + pct(r.pst, 0)) : null);
   $('#exterior-cartao').innerHTML = `<span class="ext-rotulo">Votos no exterior</span><span class="ext-numeros${b.cls}"${b.estilo}>${partes}${r ? ` <small>· ${pct(r.pst, 0)} apurado</small>` : ''}</span><span class="ext-seta" aria-hidden="true">›</span>`;
   $('#exterior-cartao').setAttribute('aria-pressed', String(est.uf === EXT));
   if (est.uf === EXT) {
@@ -240,17 +240,67 @@ function brilhar(el, chave, texto) {
   const passou = marca(chave, texto);
   if (passou === 0) { el.classList.remove('mudou'); void el.offsetWidth; el.classList.add('mudou'); }
 }
-// Votos do placar sobem contando até o valor novo, como um painel de apuração.
-function contar(el, para) {
-  const de = Number(el.dataset.valor || para);
-  el.dataset.valor = para;
-  if (de === para || reduzMovimento.matches) { el.textContent = fmtInt.format(para); return; }
-  const t0 = performance.now(), dur = 900;
-  const passo = (t) => {
-    if (el.dataset.valor !== String(para)) return; // chegou valor mais novo
-    const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
-    el.textContent = fmtInt.format(Math.round(de + (para - de) * e));
-    if (k < 1) requestAnimationFrame(passo);
+// ---------- contagem ----------
+// Número que muda conta do valor antigo ao novo em 1,2 s: arranca rápido e freia no fim
+// (como um painel de apuração), em vez de trocar de uma vez. Cada contagem é guardada por
+// chave com início e fim; um laço único de animação atualiza todos os elementos marcados
+// com data-conta. Se a tabela for redesenhada no meio, o HTML novo já nasce com o valor
+// intermediário certo e a contagem segue sem pulo.
+const DUR_CONTA = 1200;
+const contas = new Map(); // chave -> { de, para, t }
+const FORMATOS = {
+  pct2: (v) => pct(v, 2), pct1: (v) => pct(v, 1), pct0: (v) => pct(v, 0),
+  int: (v) => fmtInt.format(Math.round(v)), comp: (v) => fmtCompacto.format(Math.round(v)),
+  mais: (v) => '+' + fmtInt.format(Math.round(v)),
+};
+const desacelera = (k) => 1 - Math.pow(1 - k, 3);
+function valorEm(c, agora) {
+  const k = (agora - c.t) / DUR_CONTA;
+  return k >= 1 ? c.para : c.de + (c.para - c.de) * desacelera(Math.max(0, k));
+}
+// Registra o valor atual; devolve a contagem em curso (ou null se não há o que animar).
+function contagem(chave, valor) {
+  if (valor == null || !Number.isFinite(valor)) { contas.delete(chave); return null; }
+  const agora = performance.now();
+  const c = contas.get(chave);
+  if (!c) { contas.set(chave, { de: valor, para: valor, t: -Infinity }); return null; }
+  if (c.para !== valor) {
+    // Parte de onde a contagem anterior estava, para não voltar atrás num salto.
+    const n = { de: valorEm(c, agora), para: valor, t: agora };
+    contas.set(chave, n);
+    return reduzMovimento.matches ? null : n;
+  }
+  return !reduzMovimento.matches && agora - c.t < DUR_CONTA ? c : null;
+}
+// HTML de um número que conta: texto do instante atual + dados para o laço de animação.
+function numHtml(chave, valor, tipo, tag = 'span', classe = '') {
+  const c = contagem(chave, valor);
+  const cls = classe ? ` class="${classe}"` : '';
+  if (!c) return `<${tag}${cls}>${FORMATOS[tipo](valor)}</${tag}>`;
+  setTimeout(animarContas);
+  return `<${tag}${cls} data-conta data-de="${c.de}" data-para="${c.para}" data-t="${c.t}" data-tipo="${tipo}">${FORMATOS[tipo](valorEm(c, performance.now()))}</${tag}>`;
+}
+// Mesma coisa para um elemento que já existe (placar).
+function numEl(el, chave, valor, tipo) {
+  const c = contagem(chave, valor);
+  if (!c) { delete el.dataset.conta; el.textContent = FORMATOS[tipo](valor); return; }
+  Object.assign(el.dataset, { conta: '', de: c.de, para: c.para, t: c.t, tipo });
+  el.textContent = FORMATOS[tipo](valorEm(c, performance.now()));
+  animarContas();
+}
+let contando = false;
+function animarContas() {
+  if (contando) return;
+  contando = true;
+  const passo = () => {
+    const agora = performance.now();
+    let ativos = 0;
+    for (const el of document.querySelectorAll('[data-conta]')) {
+      const c = { de: Number(el.dataset.de), para: Number(el.dataset.para), t: Number(el.dataset.t) };
+      el.textContent = FORMATOS[el.dataset.tipo](valorEm(c, agora));
+      if (agora - c.t >= DUR_CONTA) delete el.dataset.conta; else ativos++;
+    }
+    if (ativos) requestAnimationFrame(passo); else contando = false;
   };
   requestAnimationFrame(passo);
 }
@@ -264,43 +314,45 @@ function desenharPlacar() {
     const c = doNumero(r, n);
     const alvo = el.querySelector('.cand-pct');
     // Antes da divulgação, um 0,00% apagado: o traço solto em fonte grande parecia defeito.
-    alvo.textContent = ok && c ? pct(c.pct) : '0,00%';
+    if (ok && c) numEl(alvo, 'placar|pct|' + n, c.pct, 'pct2'); else { delete alvo.dataset.conta; alvo.textContent = '0,00%'; }
     alvo.classList.toggle('vazio', !(ok && c));
-    if (ok && c) brilhar(alvo, 'placar|pct|' + n, alvo.textContent);
+    if (ok && c) brilhar(alvo, 'placar|pct|' + n, pct(c.pct));
     // Com o resultado definido, a foto de quem não foi eleito esmaece.
     el.querySelector('.cand-foto').classList.toggle('perdeu', !!(ok && r.cand.some((x) => x.eleito) && c && !c.eleito));
     const votos = el.querySelector('.cand-votos');
     if (ok && c) {
       if (!votos.querySelector('.n')) votos.innerHTML = '<span class="n"></span> votos<span class="selo-lugar"></span>';
-      contar(votos.querySelector('.n'), c.votos);
+      numEl(votos.querySelector('.n'), 'placar|votos|' + n, c.votos, 'int');
       votos.querySelector('.selo-lugar').innerHTML = c.eleito ? ' <span class="selo">ELEITO</span>' : '';
     } else votos.innerHTML = '&nbsp;';
   }
   const c13 = doNumero(r, '13'), c22 = doNumero(r, '22');
   $('#barra-disputa .b13').style.width = ok && c13 ? c13.pct + '%' : '0';
   $('#barra-disputa .b22').style.width = ok && c22 ? c22.pct + '%' : '0';
-  $('#apurado-txt').innerHTML = `Seções apuradas: <b>${r ? pct(r.pst) : '–'}</b>`;
-  if (r) brilhar($('#apurado-txt b'), 'placar|pst', pct(r.pst));
+  if (!$('#apurado-txt b')) $('#apurado-txt').innerHTML = 'Seções apuradas: <b>–</b>';
+  if (r) { numEl($('#apurado-txt b'), 'placar|pst', r.pst, 'pct2'); brilhar($('#apurado-txt b'), 'placar|pst', pct(r.pst)); }
   $('#apurado-barra').style.width = (r?.pst || 0) + '%';
   if (ok && r.cand.length >= 2) {
     const [a, b] = r.cand;
     const dif = a.votos - b.votos;
-    $('#diferenca-txt').innerHTML = dif > 0 ? `<b style="color:var(--t${a.n})">${nomeCand(a)}</b> <span class="n">+${fmtInt.format(dif)}</span>` : 'Empate';
+    // A chave inclui o líder: se a liderança virar, a diferença recomeça do zero, sem contar "através" dele.
+    $('#diferenca-txt').innerHTML = dif > 0 ? `<b style="color:var(--t${a.n})">${nomeCand(a)}</b> ${numHtml('placar|dif|' + a.n, dif, 'mais', 'span', 'n')}` : 'Empate';
     const n = $('#diferenca-txt .n');
-    if (n) { const passou = marca('placar|dif', n.textContent); if (passou != null) { n.className = 'n mudou'; if (passou > 0) n.style.animationDelay = `-${Math.round(passou)}ms`; } }
+    if (n) { const passou = marca('placar|dif', fmtInt.format(dif)); if (passou != null) { n.classList.add('mudou'); if (passou > 0) n.style.animationDelay = `-${Math.round(passou)}ms`; } }
   } else $('#diferenca-txt').textContent = '';
 
   // A diferença já aparece no placar fixo; aqui ficam os números de apoio, compactos.
   const itens = [];
-  if (ok && r.abstencao != null) itens.push(['Abstenção', `${pct(r.pAbstencao, 1)} <small>${fmtCompacto.format(r.abstencao)}</small>`]);
-  if (ok && r.brancos != null) itens.push(['Brancos', `${pct(r.pBrancos, 1)} <small>${fmtCompacto.format(r.brancos)}</small>`]);
-  if (ok && r.nulos != null) itens.push(['Nulos', `${pct(r.pNulos, 1)} <small>${fmtCompacto.format(r.nulos)}</small>`]);
+  const item = (t, p, v) => [t, `${numHtml('num|p|' + t, p, 'pct1')} ${numHtml('num|v|' + t, v, 'comp', 'small')}`, pct(p, 1) + fmtCompacto.format(v)];
+  if (ok && r.abstencao != null) itens.push(item('Abstenção', r.pAbstencao, r.abstencao));
+  if (ok && r.brancos != null) itens.push(item('Brancos', r.pBrancos, r.brancos));
+  if (ok && r.nulos != null) itens.push(item('Nulos', r.pNulos, r.nulos));
   const horas = [];
   if (r?.dg) horas.push(`TSE: <b>${escapar(r.hg || '')}</b> de ${escapar(r.dg)}`);
   if (est.ultimaConferencia) horas.push(`conferido <b id="idade">agora</b> (a cada 10 s)`);
   $('#horarios').innerHTML = horas.join(' · ');
-  $('#numeros').innerHTML = itens.map(([t, v]) => {
-    const b = attrsBrilho(marca('num|' + t, v));
+  $('#numeros').innerHTML = itens.map(([t, v, texto]) => {
+    const b = attrsBrilho(marca('num|' + t, texto));
     return `<div class="${b.cls.trim()}"${b.estilo}><dt>${t}</dt><dd>${v}</dd></div>`;
   }).join('');
 
@@ -338,20 +390,24 @@ function desenharTabela() {
     const lider = ok && r.cand.length >= 2 && r.cand[0].votos > r.cand[1].votos ? r.cand[0].n : null;
     // Cada célula compara o texto exibido com o anterior; só o que mudou na tela brilha.
     let maisRecente = null;
-    const td = (id, classe, texto, html = texto) => {
-      const passou = marca(`${tabela}|${chave}|${id}`, texto);
+    // valor/tipo: o número conta até o novo valor; texto: o que aparece ao final (compara o brilho).
+    const td = (id, classe, valor, tipo, extra = '') => {
+      const k = `${tabela}|${chave}|${id}`;
+      const texto = valor == null ? '–' : FORMATOS[tipo](valor);
+      const passou = marca(k, texto);
       if (passou != null && (maisRecente == null || passou < maisRecente)) maisRecente = passou;
       const b = attrsBrilho(passou);
-      return `<td class="${classe}${b.cls}"${b.estilo}>${html}</td>`;
+      const conteudo = valor == null ? (contas.delete(k), '–') : numHtml(k, valor, tipo, 'span', extra);
+      return `<td class="${classe}${b.cls}"${b.estilo}>${conteudo}</td>`;
     };
-    const apur = td('apur', 'pct-apur', r ? pct(r.pst, 0) : '–');
+    const apur = td('apur', 'pct-apur', r ? r.pst : null, 'pct0');
     const cels = ORDEM.map((n) => {
       const c = doNumero(r, n);
-      const texto = ok && c ? pct(c.pct, 1) : '–';
-      return td(n, `v${n}`, texto, lider === n ? `<span class="lid">${texto}</span>` : texto);
+      return td(n, `v${n}`, ok && c ? c.pct : null, 'pct1', lider === n ? 'lid' : '');
     }).join('');
     const dif = ok && r.cand.length >= 2 ? r.cand[0].votos - r.cand[1].votos : null;
-    const celDif = td('dif', lider ? 'dif' + lider : 'sem', dif != null && lider ? fmtCompacto.format(dif) : '–');
+    // A chave da diferença inclui o líder: virada de liderança recomeça do zero.
+    const celDif = td('dif' + lider, lider ? 'dif' + lider : 'sem', dif != null && lider ? dif : null, 'comp');
     // A linha inteira ganha uma faixa lateral enquanto alguma célula dela brilha.
     const bl = attrsBrilho(maisRecente, 'linha-mudou');
     return `<tr class="${bl.cls.trim()}"${bl.estilo} data-chave="${chave}"${uf ? ` data-uf="${uf}"` : ''}><td title="${escapar(nome)}">${escapar(nome)}</td>${apur}${cels}${celDif}</tr>`;
