@@ -184,7 +184,10 @@ function desenharPlacar() {
   for (const n of ORDEM) {
     const el = document.querySelector(`.cand[data-n="${n}"]`);
     const c = doNumero(r, n);
-    el.querySelector('.cand-pct').textContent = ok && c ? pct(c.pct) : '–';
+    const alvo = el.querySelector('.cand-pct');
+    // Antes da divulgação, um 0,00% apagado: o traço solto em fonte grande parecia defeito.
+    alvo.textContent = ok && c ? pct(c.pct) : '0,00%';
+    alvo.classList.toggle('vazio', !(ok && c));
     el.querySelector('.cand-votos').innerHTML = ok && c ? `${fmtInt.format(c.votos)} votos${c.eleito ? ' <span class="selo">ELEITO</span>' : ''}` : '&nbsp;';
   }
   const c13 = doNumero(r, '13'), c22 = doNumero(r, '22');

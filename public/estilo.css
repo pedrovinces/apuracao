@@ -15,6 +15,8 @@
   }
 }
 * { box-sizing: border-box; }
+/* Regras com display (flex, grid) venceriam o atributo hidden; aqui ele sempre ganha. */
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0; background: var(--fundo); color: var(--texto);
@@ -64,6 +66,7 @@ h1 span { display: block; font-size: 13px; font-weight: 500; color: var(--suave)
 .c13 .cand-pct { color: var(--t13); } .c22 .cand-pct { color: var(--t22); }
 .cand-pct { font-size: 34px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em; }
 .cand-votos { font-size: 13px; color: var(--suave); }
+.cand-pct.vazio { color: var(--borda); }
 .selo {
   display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .06em; color: #fff;
   padding: 2px 7px; border-radius: 5px; vertical-align: 3px; margin: 0 4px;
@@ -105,8 +108,11 @@ main { padding: 12px 16px 8px; max-width: 1180px; margin: 0 auto; }
 .segmentado button[aria-pressed="true"] { background: var(--cartao); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
 .seletor-uf { flex: 1; }
 .seletor-uf select {
-  width: 100%; min-height: 50px; border-radius: 12px; border: 1px solid var(--borda); background: var(--cartao);
-  padding: 0 12px; font-weight: 600; font-size: 16px; /* 16 px evita o zoom automático do iOS */
+  /* appearance: none tira o visual nativo pequeno do Safari; a seta vem do SVG abaixo. */
+  -webkit-appearance: none; appearance: none;
+  width: 100%; min-height: 50px; border-radius: 12px; border: 1px solid var(--borda);
+  background: var(--cartao) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238a909b' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 14px center;
+  padding: 0 36px 0 12px; font-weight: 600; font-size: 16px; /* 16 px evita o zoom automático do iOS */
 }
 .progresso { font-size: 13px; color: var(--suave); margin: 0 0 10px; }
 
