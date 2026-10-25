@@ -59,13 +59,13 @@ h1 span { display: block; font-size: 13px; font-weight: 500; color: var(--suave)
   padding: 8px 16px 10px; border-bottom: 1px solid var(--borda);
 }
 .cands { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-/* Foto no lado de dentro de cada metade: os dois candidatos ficam frente a frente sobre a
-   barra da disputa. O nome ocupa a linha de cima inteira para não ser cortado. */
+/* Fotos nos extremos da página (Lula à esquerda, Flávio à direita), com o nome logo acima;
+   o nome ocupa a linha de cima inteira para não ser cortado no celular. */
 .cand {
-  min-width: 0; display: grid; column-gap: 6px; align-items: end;
-  grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nome nome" "pct foto" "votos foto";
+  min-width: 0; display: grid; column-gap: 8px; align-items: end;
+  grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "nome nome" "foto pct" "foto votos";
 }
-.cand.c22 { text-align: right; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "nome nome" "foto pct" "foto votos"; }
+.cand.c22 { text-align: right; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nome nome" "pct foto" "votos foto"; }
 .cand-nome { grid-area: nome; } .cand-pct { grid-area: pct; } .cand-votos { grid-area: votos; }
 .cand-foto {
   grid-area: foto; display: block; height: 62px; width: auto; align-self: end; margin-bottom: -10px;
@@ -77,7 +77,7 @@ h1 span { display: block; font-size: 13px; font-weight: 500; color: var(--suave)
 .cand-nome { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cand-nome small { font-weight: 500; color: var(--suave); font-size: 12px; }
 .c13 .cand-pct { color: var(--t13); } .c22 .cand-pct { color: var(--t22); }
-.cand-pct { font-size: 31px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em; }
+.cand-pct { font-size: 30px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em; }
 .cand-votos { font-size: 13px; color: var(--suave); }
 .cand-pct.vazio { color: var(--borda); }
 .selo {
@@ -176,6 +176,27 @@ td .lid { font-weight: 800; }
 td.v13 .lid, td.dif13 { color: var(--t13); } td.v22 .lid, td.dif22 { color: var(--t22); }
 td.sem { color: var(--suave); }
 .pct-apur { color: var(--suave); }
+
+/* Sinalização de número que acabou de mudar: brilho que some em 2,4 s. Nas colunas de
+   candidato o brilho tem a cor dele; nas demais, âmbar neutro. A linha ganha uma faixa
+   lateral, que guia o olho até onde houve mudança numa tabela longa. */
+:root { --brilho: rgba(245, 158, 11, .32); --brilho13: rgba(200, 30, 30, .2); --brilho22: rgba(29, 78, 216, .2); }
+@media (prefers-color-scheme: dark) { :root { --brilho: rgba(245, 158, 11, .3); --brilho13: rgba(248, 113, 113, .26); --brilho22: rgba(122, 162, 255, .26); } }
+@keyframes brilho { from { background-color: var(--cor-brilho, var(--brilho)); } to { background-color: transparent; } }
+@keyframes faixa { from { box-shadow: inset 3px 0 0 var(--cor-faixa, #f59e0b); } to { box-shadow: inset 3px 0 0 transparent; } }
+td.mudou, .numeros div.mudou, .ext-numeros.mudou, .cand-pct.mudou, #apurado-txt b.mudou, #diferenca-txt .n.mudou {
+  animation: brilho 2.4s ease-out; border-radius: 4px; /* sem fill-mode: ao terminar, volta ao fundo original (o cartão continua branco) */
+}
+td.v13.mudou { --cor-brilho: var(--brilho13); } td.v22.mudou { --cor-brilho: var(--brilho22); }
+.c13 .cand-pct.mudou { --cor-brilho: var(--brilho13); } .c22 .cand-pct.mudou { --cor-brilho: var(--brilho22); }
+.cand-pct.mudou { border-radius: 8px; }
+tr.linha-mudou { animation: faixa 2.4s ease-out; }
+.numeros div.mudou { animation-name: brilho; }
+/* Sem animação para quem pediu menos movimento: o realce aparece e some de uma vez. */
+@media (prefers-reduced-motion: reduce) {
+  td.mudou, .numeros div.mudou, .ext-numeros.mudou, .cand-pct.mudou, #apurado-txt b.mudou, #diferenca-txt .n.mudou, tr.linha-mudou { animation-timing-function: steps(1, end); }
+}
+.mapa-svg .mun, .mapa-svg .uf { transition: fill .8s ease; }
 
 /* Dica (mouse) e painel inferior (toque). */
 .dica {
