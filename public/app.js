@@ -163,7 +163,7 @@ function aplicarVista() {
   $('#voltar').hidden = !est.uf && !est.regiao;
   $('#voltar').textContent = est.uf && est.regiao ? `← ${REGIOES[est.regiao].nome}` : '← Brasil';
   const reg = !est.uf && est.regiao ? REGIOES[est.regiao] : null;
-  $('#regiao-resumo').hidden = !reg;
+  $('#regiao-resumo').hidden = !reg && !(est.uf && est.uf !== EXT);
   $('#titulo-mapa').textContent = exterior ? 'Votos no exterior' : est.uf ? NOME_UF[est.uf] : reg ? `Região ${reg.nome}` : munis ? 'Brasil por município' : 'Brasil por estado';
   $('#dica-uso').textContent = est.uf
     ? 'Toque num município para ver os números. Use dois dedos para ampliar.'
@@ -185,15 +185,24 @@ function aplicarVista() {
 
 // Resumo da região escolhida (no lugar de destaque do mapa) e tabela das cinco regiões
 // na visão do Brasil. Mesmas regras de contagem e brilho das outras tabelas.
+// Indicador gráfico da apuração: barra com seções totalizadas / total (estado, região, exterior).
+function barraApuracao(r) {
+  if (!r || !publicado(r)) return '';
+  const sec = r.secoesTotal ? `<small>${fmtInt.format(r.secoesApuradas)} de ${fmtInt.format(r.secoesTotal)} seções</small>` : '';
+  return `<div class="apur-regiao"><div class="apur-regiao-rotulo"><span>Seções apuradas</span><b>${pct(r.pst)}</b></div><div class="barra-apurado grossa"><span style="width:${Math.min(100, r.pst)}%"></span></div>${sec}</div>`;
+}
+
 function desenharRegioes() {
   const reg = !est.uf && est.regiao ? est.regiao : null;
+  if (est.uf && est.uf !== EXT) {
+    const r = resultadoUf(est.uf);
+    $('#regiao-resumo').innerHTML = barraApuracao(r) + fichaHtml(NOME_UF[est.uf], 'Estado', r);
+  }
   if (reg) {
     const r = resultadoRegiao(reg);
-    const sec = r && r.secoesTotal ? `${fmtInt.format(r.secoesApuradas)} de ${fmtInt.format(r.secoesTotal)} seções` : '';
     const falta = r?.faltando?.length ? ` · faltam dados de ${r.faltando.join(', ')} (soma parcial)` : '';
     // Indicador gráfico da apuração da região: barra com seções totalizadas / total.
-    const barra = r && r.secoesTotal ? `<div class="apur-regiao"><div class="apur-regiao-rotulo"><span>Seções apuradas</span><b>${pct(r.pst)}</b></div><div class="barra-apurado grossa"><span style="width:${Math.min(100, r.pst)}%"></span></div><small>${fmtInt.format(r.secoesApuradas)} de ${fmtInt.format(r.secoesTotal)} seções</small></div>` : '';
-    $('#regiao-resumo').innerHTML = barra + fichaHtml(`Região ${REGIOES[reg].nome}`, `${REGIOES[reg].ufs.length} estados${falta}`, r);
+    $('#regiao-resumo').innerHTML = barraApuracao(r) + fichaHtml(`Região ${REGIOES[reg].nome}`, `${REGIOES[reg].ufs.length} estados${falta}`, r);
   }
   const cartao = $('#cartao-regioes');
   cartao.hidden = !!est.uf || !!est.regiao;
@@ -230,7 +239,7 @@ function ficha(tipo, f) {
     if (!est.tsePorIbge.has(f.properties.ibge)) sub += ' · sem correspondência no TSE';
   }
   if (tipo === 'uf' && est.uf !== f.properties.uf.toLowerCase()) acao = `<button type="button" class="ficha-acao" data-uf="${f.properties.uf.toLowerCase()}">Ver municípios</button>`;
-  return fichaHtml(titulo, sub, r, acao);
+  return (tipo === 'uf' ? barraApuracao(r) : '') + fichaHtml(titulo, sub, r, acao);
 }
 function fichaHtml(titulo, sub, r, acao = '') {
   return `<div class="ficha-titulo">${escapar(titulo)}</div><div class="ficha-sub">${escapar(sub)}${r ? ' · ' + pct(r.pst) + ' das seções apuradas' : ''}</div>${linhasCand(r)}${acao}`;
@@ -246,7 +255,7 @@ function desenharExterior() {
   $('#exterior-cartao').setAttribute('aria-pressed', String(est.uf === EXT));
   if (est.uf === EXT) {
     const cidades = est.munCfg.filter((m) => m.uf === EXT).length;
-    $('#exterior-resumo').innerHTML = fichaHtml('Brasileiros que votam fora do país', `${cidades ? fmtInt.format(cidades) + ' cidades · ' : ''}${r?.eleitores ? fmtInt.format(r.eleitores) + ' eleitores' : ''}`, r)
+    $('#exterior-resumo').innerHTML = barraApuracao(r) + fichaHtml('Brasileiros que votam fora do país', `${cidades ? fmtInt.format(cidades) + ' cidades · ' : ''}${r?.eleitores ? fmtInt.format(r.eleitores) + ' eleitores' : ''}`, r)
       + '<p class="ficha-sub">Os votos do exterior já entram no total nacional do placar. Abaixo, o resultado por cidade.</p>';
   }
 }
@@ -519,9 +528,12 @@ function desenharTabela() {
   if (est.uf && publicado(est.br?.resultado)) {
     const nome = est.uf === EXT ? 'cidades' : 'municípios';
     resumo.hidden = false;
-    resumo.textContent = comApuracao < total
-      ? `${fmtInt.format(comApuracao)} de ${fmtInt.format(total)} ${nome} com apuração; ${est.uf === EXT ? 'as demais' : 'os demais'} aparecem com – até o TSE publicar.`
-      : `${est.uf === EXT ? 'Todas as' : 'Todos os'} ${fmtInt.format(total)} ${nome} com apuração.`;
+    // Antes de algum local chegar, "0 com apuração" seria falso: ainda não foram lidos.
+    const lidos = linhas.filter((l) => l.r).length;
+    resumo.textContent = !lidos ? `Carregando os ${nome} do TSE…`
+      : comApuracao < total
+        ? `${fmtInt.format(comApuracao)} de ${fmtInt.format(total)} ${nome} com apuração${carga.ativa ? ' (lendo os demais…)' : `; ${est.uf === EXT ? 'as demais' : 'os demais'} aparecem com – até o TSE publicar.`}`
+        : `${est.uf === EXT ? 'Todas as' : 'Todos os'} ${fmtInt.format(total)} ${nome} com apuração.`;
   } else resumo.hidden = true;
   if (est.uf) linhas = linhas.slice(0, est.limiteTabela);
   tbody.innerHTML = linhasHtml(est.uf || 'br', linhas);
@@ -547,8 +559,8 @@ function linhasHtml(tabela, linhas) {
       return `<td class="${classe}${b.cls}"${b.estilo}>${conteudo}</td>`;
     };
     let apur = td('apur', 'pct-apur', r ? r.pst : null, 'pct0');
-    // Regiões: barrinha de progresso das seções apuradas dentro da célula.
-    if (tabela === 'regioes' && r) apur = apur.replace(/<\/td>$/, `<span class="mini-apur" aria-hidden="true"><i style="width:${Math.min(100, r.pst)}%"></i></span></td>`);
+    // Regiões e estados: barrinha de progresso das seções apuradas dentro da célula.
+    if ((tabela === 'regioes' || uf) && r) apur = apur.replace(/<\/td>$/, `<span class="mini-apur" aria-hidden="true"><i style="width:${Math.min(100, r.pst)}%"></i></span></td>`);
     const cels = ORDEM.map((n) => {
       const c = doNumero(r, n);
       return td(n, `v${n}`, ok && c ? c.pct : null, 'pct1', lider === n ? 'lid' : '');
