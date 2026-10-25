@@ -1,0 +1,19 @@
+{
+  "name": "apuracao",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Painel de apuração do 2º turno presidencial de 2026 a partir dos arquivos públicos do TSE",
+  "type": "module",
+  "scripts": {
+    "geo": "node tools/gerar-geo.mjs",
+    "vendor": "node tools/copiar-vendor.mjs",
+    "serve": "node tools/servidor.mjs",
+    "test": "node tools/testar.mjs"
+  },
+  "devDependencies": {
+    "d3": "7.9.0",
+    "ibge-cidades-com-poligonos": "1.0.0",
+    "mapshaper": "0.6.102",
+    "topojson-client": "3.1.0"
+  }
+}

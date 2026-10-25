@@ -1,0 +1,195 @@
+/* Mobile primeiro: a base é a tela de 390 px; telas largas só ganham colunas e respiro. */
+:root {
+  --fundo: #f6f5f2; --cartao: #ffffff; --texto: #16181d; --suave: #5d636e; --borda: #e3e0d9;
+  --neutro: #efe8dc; --semdados: #cbcbcb; --contorno: #ffffff; --contorno-uf: #2b2f36;
+  --c13: #c81e1e; --c22: #1d4ed8; --t13: #b91c1c; --t22: #1d4ed8;
+  --raio: 14px; --sombra: 0 1px 2px rgba(0,0,0,.06), 0 4px 18px rgba(0,0,0,.05);
+  --topo-demo: 0px;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo: #0f1115; --cartao: #181b21; --texto: #eceef2; --suave: #9aa1ad; --borda: #2a2e36;
+    --neutro: #6a6e77; --semdados: #2f3239; --contorno: #0f1115; --contorno-uf: #e7e9ee;
+    --t13: #f87171; --t22: #7aa2ff; --sombra: none;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--fundo); color: var(--texto);
+  font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-variant-numeric: tabular-nums; overflow-x: hidden;
+  padding-top: var(--topo-demo);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+body.demo { --topo-demo: 28px; }
+a { color: inherit; }
+button, select { font: inherit; color: inherit; }
+.visualmente-oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.faixa-demo {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  background: #f97316; color: #fff; font-weight: 800; font-size: 13px; letter-spacing: .08em;
+}
+
+.topo { padding: 12px 16px 4px; }
+.titulo { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+h1 { margin: 0; font-size: 18px; line-height: 1.2; font-weight: 800; }
+h1 span { display: block; font-size: 13px; font-weight: 500; color: var(--suave); }
+.pilula {
+  flex: none; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 99px;
+  background: var(--borda); color: var(--suave); white-space: nowrap;
+}
+.pilula.vivo { background: #dcfce7; color: #166534; }
+.pilula.vivo::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #16a34a; margin-right: 6px; vertical-align: 1px; animation: pulso 1.6s infinite; }
+.pilula.final { background: #e0e7ff; color: #3730a3; }
+@media (prefers-color-scheme: dark) { .pilula.vivo { background: #14341f; color: #86efac; } .pilula.final { background: #232a4d; color: #c7d2fe; } }
+@keyframes pulso { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .pilula.vivo::before { animation: none; } }
+
+/* Placar fixo no topo ao rolar: no celular é o que a pessoa quer ver o tempo todo. */
+.placar {
+  position: sticky; top: var(--topo-demo); z-index: 20;
+  background: color-mix(in srgb, var(--fundo) 92%, transparent);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  padding: 8px 16px 10px; border-bottom: 1px solid var(--borda);
+}
+.cands { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cand { min-width: 0; }
+.cand.c22 { text-align: right; }
+.cand-nome { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cand-nome small { font-weight: 500; color: var(--suave); font-size: 12px; }
+.c13 .cand-pct { color: var(--t13); } .c22 .cand-pct { color: var(--t22); }
+.cand-pct { font-size: 34px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em; }
+.cand-votos { font-size: 13px; color: var(--suave); }
+.selo {
+  display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .06em; color: #fff;
+  padding: 2px 7px; border-radius: 5px; vertical-align: 3px; margin: 0 4px;
+}
+.c13 .selo { background: var(--c13); } .c22 .selo { background: var(--c22); }
+.barra-disputa { position: relative; display: flex; height: 10px; border-radius: 99px; overflow: hidden; background: var(--semdados); margin: 8px 0 6px; }
+.barra-disputa span { display: block; height: 100%; width: 0; transition: width .6s ease; }
+.barra-disputa .b13 { background: var(--c13); } .barra-disputa .b22 { background: var(--c22); margin-left: auto; }
+.barra-disputa .meio { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 2px; background: var(--fundo); }
+.apurado-rotulo { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--suave); }
+.apurado-rotulo b { color: var(--texto); }
+.barra-apurado { height: 5px; background: var(--borda); border-radius: 99px; overflow: hidden; margin-top: 4px; }
+.barra-apurado span { display: block; height: 100%; width: 0; background: var(--texto); transition: width .6s ease; }
+
+main { padding: 12px 16px 8px; max-width: 1180px; margin: 0 auto; }
+.aviso {
+  background: #fff7e6; color: #7a4a00; border: 1px solid #f5d28a; border-radius: var(--raio);
+  padding: 12px 14px; font-size: 15px; margin-bottom: 12px;
+}
+.aviso.erro { background: #fdecec; color: #8a1c1c; border-color: #f1b4b4; }
+@media (prefers-color-scheme: dark) {
+  .aviso { background: #2b2210; color: #f6d38c; border-color: #5b4515; }
+  .aviso.erro { background: #2d1414; color: #f7b1b1; border-color: #5c2222; }
+}
+.numeros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0 0 6px; }
+.numeros:empty { display: none; }
+.numeros div { background: var(--cartao); border: 1px solid var(--borda); border-radius: 12px; padding: 6px 9px; min-width: 0; }
+.numeros dt { font-size: 12px; color: var(--suave); }
+.numeros dd { margin: 0; font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.numeros dd small { display: block; font-weight: 500; font-size: 12px; color: var(--suave); }
+.horarios { font-size: 12px; color: var(--suave); margin: 0 0 12px; }
+.horarios:empty { display: none; }
+
+.controles { display: flex; gap: 8px; margin-bottom: 10px; }
+.segmentado { display: flex; flex: 1.3; background: var(--borda); border-radius: 12px; padding: 3px; }
+.segmentado button {
+  flex: 1; min-height: 44px; border: 0; border-radius: 9px; background: transparent; font-weight: 600; font-size: 15px; cursor: pointer;
+}
+.segmentado button[aria-pressed="true"] { background: var(--cartao); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.seletor-uf { flex: 1; }
+.seletor-uf select {
+  width: 100%; min-height: 50px; border-radius: 12px; border: 1px solid var(--borda); background: var(--cartao);
+  padding: 0 12px; font-weight: 600; font-size: 16px; /* 16 px evita o zoom automático do iOS */
+}
+.progresso { font-size: 13px; color: var(--suave); margin: 0 0 10px; }
+
+.cartao-mapa, .cartao-tabela {
+  background: var(--cartao); border: 1px solid var(--borda); border-radius: var(--raio); box-shadow: var(--sombra);
+  padding: 10px; margin-bottom: 14px;
+}
+.mapa-topo { display: flex; align-items: center; gap: 8px; min-height: 40px; }
+h2 { font-size: 16px; margin: 0; flex: 1; }
+.botao-voltar, .botao-leve {
+  min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--borda); background: var(--fundo);
+  font-weight: 600; font-size: 14px; cursor: pointer;
+}
+.botao-leve.largo { width: 100%; margin-top: 8px; min-height: 44px; }
+.mapa { width: 100%; position: relative; }
+.mapa-svg { display: block; width: 100%; height: auto; touch-action: pan-x pan-y; -webkit-tap-highlight-color: transparent; user-select: none; }
+.mapa-svg path { vector-effect: non-scaling-stroke; cursor: pointer; }
+.mapa-svg .mun { stroke: var(--contorno); stroke-width: .25px; }
+.mapa-svg .uf { stroke: var(--contorno); stroke-width: 1px; }
+.mapa-svg .uf.contorno { fill: none; stroke: var(--contorno-uf); stroke-width: .7px; stroke-opacity: .55; pointer-events: none; }
+.mapa-svg path.ativo { stroke: var(--texto); stroke-width: 2px; }
+.legenda { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 12px; color: var(--suave); padding: 8px 2px 0; }
+.legenda .rampa { display: inline-flex; align-items: center; gap: 6px; }
+.legenda .rampa i { display: inline-block; width: 64px; height: 10px; border-radius: 3px; }
+.legenda .caixa { display: inline-block; width: 12px; height: 10px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
+.dica-uso { font-size: 12px; color: var(--suave); margin: 6px 2px 0; }
+
+.tabela-rolagem { margin: 6px -10px 0; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; table-layout: fixed; }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--suave); font-weight: 700; text-align: right; padding: 6px 4px; border-bottom: 1px solid var(--borda); }
+td { padding: 10px 4px; border-bottom: 1px solid var(--borda); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+th:first-child, td:first-child { text-align: left; padding-left: 10px; }
+th:last-child, td:last-child { padding-right: 10px; }
+th.col-local { width: 31%; } th.col-apur { width: 13%; } th.col-c { width: 17.5%; } th.col-dif { width: 21%; }
+tbody tr { cursor: pointer; }
+tbody tr:active { background: var(--fundo); }
+td .lid { font-weight: 800; }
+td.v13 .lid, td.dif13 { color: var(--t13); } td.v22 .lid, td.dif22 { color: var(--t22); }
+td.sem { color: var(--suave); }
+.pct-apur { color: var(--suave); }
+
+/* Dica (mouse) e painel inferior (toque). */
+.dica {
+  position: fixed; z-index: 40; pointer-events: none; background: var(--cartao); color: var(--texto);
+  border: 1px solid var(--borda); border-radius: 12px; padding: 10px 12px; box-shadow: 0 8px 30px rgba(0,0,0,.18);
+  font-size: 14px; min-width: 210px; max-width: 280px;
+}
+.painel {
+  position: fixed; z-index: 45; left: 0; right: 0; bottom: 0; background: var(--cartao);
+  border-top-left-radius: 18px; border-top-right-radius: 18px; border: 1px solid var(--borda);
+  box-shadow: 0 -10px 40px rgba(0,0,0,.22); padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+  max-width: 560px; margin: 0 auto; animation: subir .18s ease-out;
+}
+@keyframes subir { from { transform: translateY(30px); opacity: 0; } }
+.painel-fechar { position: absolute; top: 6px; right: 8px; width: 44px; height: 44px; border: 0; background: transparent; font-size: 28px; line-height: 1; cursor: pointer; color: var(--suave); }
+.ficha-titulo { font-weight: 800; font-size: 17px; padding-right: 40px; }
+.ficha-sub { font-size: 13px; color: var(--suave); margin-bottom: 8px; }
+.ficha-linha { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; margin: 6px 0; font-size: 14px; }
+.ficha-linha b { font-size: 16px; }
+.ficha-linha .mini { grid-column: 1 / -1; height: 6px; background: var(--borda); border-radius: 99px; overflow: hidden; }
+.ficha-linha .mini span { display: block; height: 100%; }
+.ficha-acao { margin-top: 10px; width: 100%; min-height: 46px; border-radius: 12px; border: 0; background: var(--texto); color: var(--fundo); font-weight: 700; font-size: 15px; cursor: pointer; }
+
+.rodape { max-width: 1180px; margin: 0 auto; padding: 4px 16px 40px; font-size: 13px; color: var(--suave); }
+.rodape details { margin-top: 10px; background: var(--cartao); border: 1px solid var(--borda); border-radius: 12px; padding: 10px 12px; }
+.rodape summary { cursor: pointer; font-weight: 600; color: var(--texto); min-height: 28px; }
+.diag { font-size: 12px; overflow-x: auto; }
+.diag table { table-layout: auto; font-size: 12px; }
+.diag td, .diag th { white-space: nowrap; text-align: left; padding: 4px 6px; }
+.diag code { font-size: 11px; word-break: break-all; white-space: normal; }
+
+/* Telas largas: mapa e tabela lado a lado; o placar ganha espaço. */
+@media (min-width: 900px) {
+  .topo, .placar { padding-left: max(16px, calc((100vw - 1180px) / 2 + 16px)); padding-right: max(16px, calc((100vw - 1180px) / 2 + 16px)); }
+  h1 { font-size: 22px; } h1 span { display: inline; margin-left: 8px; font-size: 15px; }
+  .cand-pct { font-size: 46px; }
+  .cand-nome { font-size: 18px; }
+  main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 0 16px; align-items: start; }
+  .aviso, .numeros, .horarios, .controles, .progresso { grid-column: 1 / -1; }
+  .numeros { max-width: 560px; }
+  table { font-size: 14px; }
+  .controles { max-width: 560px; }
+  .cartao-tabela { max-height: calc(100vh - 210px); overflow: auto; position: sticky; top: 190px; }
+  .painel { bottom: 16px; border-radius: 18px; }
+  .dica-uso { display: none; }
+}

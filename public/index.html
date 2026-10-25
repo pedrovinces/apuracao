@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Apuração 2º turno 2026</title>
+<meta name="description" content="Apuração ao vivo do 2º turno presidencial de 2026, com dados públicos de divulgação do TSE: placar, mapa por estado e município, tabela.">
+<meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="Apuração 2º turno presidencial 2026">
+<meta property="og:description" content="Placar, mapa e tabela com os dados públicos do TSE, atualizados a cada 30 segundos.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='16' height='32' fill='%23c81e1e'/%3E%3Crect x='16' width='16' height='32' fill='%231d4ed8'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="estilo.css">
+<link rel="preload" href="geo/brasil.topo.json" as="fetch" crossorigin>
+</head>
+<body>
+<div id="faixa-demo" class="faixa-demo" hidden>DADOS FICTÍCIOS · modo demonstração</div>
+
+<header class="topo">
+  <div class="titulo">
+    <h1>Apuração <span>2º turno · Presidente · 2026</span></h1>
+    <span id="estado-ao-vivo" class="pilula">carregando</span>
+  </div>
+</header>
+
+<section id="placar" class="placar" aria-live="polite">
+  <div class="cands" id="cands">
+    <div class="cand c13" data-n="13"><div class="cand-nome">Lula <small>PT · 13</small></div><div class="cand-pct">–</div><div class="cand-votos">&nbsp;</div></div>
+    <div class="cand c22" data-n="22"><div class="cand-nome">Flávio Bolsonaro <small>PL · 22</small></div><div class="cand-pct">–</div><div class="cand-votos">&nbsp;</div></div>
+  </div>
+  <div class="barra-disputa" id="barra-disputa" aria-hidden="true"><span class="b13"></span><span class="b22"></span><i class="meio"></i></div>
+  <div class="linha-apurado">
+    <div class="apurado-rotulo"><span id="apurado-txt">Seções apuradas: –</span><span id="diferenca-txt"></span></div>
+    <div class="barra-apurado" aria-hidden="true"><span id="apurado-barra"></span></div>
+  </div>
+</section>
+
+<main>
+  <div id="aviso" class="aviso" hidden></div>
+
+  <dl class="numeros" id="numeros"></dl>
+  <p class="horarios" id="horarios"></p>
+
+  <nav class="controles" aria-label="Escolha do recorte">
+    <div class="segmentado" role="group" aria-label="Nível do mapa">
+      <button type="button" data-nivel="estados" aria-pressed="true">Estados</button>
+      <button type="button" data-nivel="municipios" aria-pressed="false">Municípios</button>
+    </div>
+    <label class="seletor-uf"><span class="visualmente-oculto">Estado</span>
+      <select id="uf"><option value="">Brasil</option></select>
+    </label>
+  </nav>
+
+  <div id="progresso" class="progresso" hidden><span id="progresso-txt"></span><div class="barra-apurado"><span id="progresso-barra"></span></div></div>
+
+  <section class="cartao-mapa">
+    <div class="mapa-topo">
+      <button type="button" id="voltar" class="botao-voltar" hidden>← Brasil</button>
+      <h2 id="titulo-mapa">Brasil por estado</h2>
+      <button type="button" id="zoom-reset" class="botao-leve" hidden>Ver inteiro</button>
+    </div>
+    <div id="mapa" class="mapa"></div>
+    <div class="legenda" id="legenda"></div>
+    <p class="dica-uso" id="dica-uso">Toque num estado para ver os municípios. Use dois dedos para ampliar.</p>
+  </section>
+
+  <section class="cartao-tabela">
+    <h2 id="titulo-tabela">Por estado</h2>
+    <div class="tabela-rolagem"><table id="tabela"><thead></thead><tbody></tbody></table></div>
+    <button type="button" id="mais" class="botao-leve largo" hidden>Mostrar todos</button>
+  </section>
+</main>
+
+<div id="dica" class="dica" role="tooltip" hidden></div>
+<div id="painel" class="painel" role="dialog" aria-modal="false" aria-labelledby="painel-titulo" hidden>
+  <button type="button" class="painel-fechar" id="painel-fechar" aria-label="Fechar">×</button>
+  <div id="painel-conteudo"></div>
+</div>
+
+<footer class="rodape">
+  <p>Fonte: arquivos públicos de divulgação do <a href="https://resultados.tse.jus.br/" rel="noopener">TSE</a> (resultados.tse.jus.br), lidos a cada 30 s. Malha municipal: IBGE (pacote ibge-cidades-com-poligonos), simplificada.</p>
+  <p>O voto é secreto: o menor recorte exibido aqui é o município. Os números oficiais são os do TSE; este painel é independente.</p>
+  <details id="diagnostico"><summary>Diagnóstico das leituras</summary><div id="diag-conteudo">Abra para ver.</div></details>
+</footer>
+
+<script src="vendor/d3.min.js"></script>
+<script src="vendor/topojson-client.min.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
