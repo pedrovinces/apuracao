@@ -5,7 +5,7 @@ Painel estático (HTML + JS puro, módulos ES) que lê os arquivos públicos de 
 Publicado pelo GitHub Pages a partir da pasta `public/` (workflow em `.github/workflows/pages.yml`).
 
 - `?demo=1`: dados FICTÍCIOS no formato do TSE, apuração de 0 a 100% em 10 minutos (`&p=50` começa em 50%).
-- `?uf=SP`: abre direto nos municípios de um estado. `?nivel=municipios`: municípios do Brasil inteiro.
+- `?uf=SP`: abre direto nos municípios de um estado (`?uf=ZZ`: votos no exterior, por cidade). `?nivel=municipios`: municípios do Brasil inteiro.
 - `?e=6258`: força o código da eleição, pulando a descoberta automática.
 
 ## Estrutura
@@ -31,6 +31,16 @@ Publicado pelo GitHub Pages a partir da pasta `public/` (workflow em `.github/wo
   O formato `dados-simplificados/...-r.json` de 2022 não existe mais; fica como segunda tentativa.
 - Municípios: `ele2026/{cd}/config/mun-e{cd6}-cm.json`, `abr[]` (`cd` = UF) e `mu[]` (`cd`, `cdi`, `nm`).
 - O TSE responde CORS ecoando a origem, então o navegador lê direto, sem proxy.
+- A CDN do TSE ignora parâmetros na URL e guarda cada arquivo por até ~60 s (`cache-control: max-age` ≤ 60).
+  O painel confere o arquivo nacional a cada 10 s e, quando ele muda (`idg`), relê UFs e exterior na hora.
+- Exterior: UF `zz`, 186 cidades no `mun-...-cm.json` (sem `cdi`), arquivos `dados/zz/zz<cidade>-c0001-...-u.json`.
+- Fotos: `ele2026/6258/fotos/br/<sqcand>.jpeg`; recortadas com `tools/recortar-fotos.py` para `public/img`.
+
+## Cache do GitHub Pages
+
+O GitHub Pages manda o navegador guardar os arquivos por 10 min e não permite mudar isso. Na publicação,
+o workflow troca `?v=dev` pelo commit em todas as URLs e grava `versao.json`; a página aberta consulta
+esse arquivo a cada minuto (e ao voltar para a aba) e se recarrega quando há versão nova.
 
 ## Local
 

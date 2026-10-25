@@ -25,6 +25,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      # O GitHub Pages manda o navegador guardar tudo por 10 min, sem opção de mudar.
+      # Trocamos ?v=dev pelo commit (URLs novas a cada versão) e gravamos versao.json,
+      # que a página aberta consulta para se recarregar quando sai versão nova.
+      - name: Carimbar a versão
+        run: |
+          V="${GITHUB_SHA::8}"
+          sed -i "s/?v=dev/?v=$V/g" public/*.html public/*.js
+          printf '{"v":"%s"}\n' "$V" > public/versao.json
+          grep -c "?v=$V" public/index.html public/app.js
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public

@@ -15,6 +15,7 @@ const casos = [
   { nome: 'municipios-br', q: '?demo=1&p=60&nivel=municipios', espera: 'municipios' },
   { nome: 'uf-sp', q: '?demo=1&p=70&uf=SP', espera: 'municipios' },
   { nome: 'final', q: '?demo=1&p=100&uf=BA', espera: 'municipios' },
+  { nome: 'exterior', q: '?demo=1&p=80&uf=ZZ', espera: 'municipios' },
 ];
 const extra = process.env.REAL ? [{ nome: 'real', q: '', real: true }] : [];
 const navegador = await chromium.launch(process.env.HTTPS_PROXY ? { proxy: { server: process.env.HTTPS_PROXY, bypass: 'localhost,127.0.0.1' } } : {});
@@ -27,7 +28,7 @@ for (const tela of telas) {
     pag.on('console', (m) => { if (m.type() === 'error' && !(caso.real && /404|Failed to load resource/.test(m.text()))) erros.push(m.text()); });
     pag.on('pageerror', (e) => erros.push(String(e)));
     await pag.goto(base + caso.q, { waitUntil: 'load' });
-    await pag.waitForSelector('.mapa-svg path', { timeout: 20000 });
+    await pag.waitForSelector(caso.q.includes('uf=ZZ') ? '#exterior-resumo .ficha-titulo' : '.mapa-svg path', { timeout: 20000 });
     if (caso.espera === 'municipios') {
       // Espera a carga dos municípios terminar ("N de N").
       await pag.waitForFunction(() => /: ([\d.]+) de \1\b/.test(document.querySelector('#progresso-txt')?.textContent || ''), null, { timeout: 240000 }).catch(() => console.log('  (carga de municípios não terminou a tempo)'));

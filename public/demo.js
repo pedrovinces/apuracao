@@ -1,7 +1,7 @@
 // Modo demonstração (?demo=1): gera dados FICTÍCIOS no formato dos arquivos do TSE de 2026
 // (dados/<uf>/<uf><mun>-c0001-e<cd>-u.json) e os entrega ao mesmo parser do modo real.
 // A apuração vai de 0 a 100% em 10 minutos; ?p=50 começa no meio, para testes.
-import { pad6 } from './parser.js';
+import { pad6 } from './parser.js?v=dev';
 
 const DURACAO = 10 * 60 * 1000;
 const CICLO = 'ele2026';
@@ -40,6 +40,17 @@ export function criarDemo(municipiosGeo) {
       atraso: h(ibge, 4) * 0.7, vies: (h(ibge, 5) - 0.5) * 0.12,
       secoes: Math.max(1, Math.ceil(eleitores / 330)),
     };
+  });
+  // Exterior (zz): cidades fictícias com eleitorado pequeno, como no TSE.
+  const CIDADES = ['LISBOA', 'PORTO', 'MIAMI', 'BOSTON', 'NOVA YORK', 'ORLANDO', 'TÓQUIO', 'NAGOIA', 'LONDRES', 'PARIS', 'MADRI', 'ROMA',
+    'MILÃO', 'BERLIM', 'GENEBRA', 'ZURIQUE', 'TORONTO', 'MONTREAL', 'BUENOS AIRES', 'ASSUNÇÃO', 'SANTIAGO', 'SYDNEY', 'DUBLIN', 'BRUXELAS'];
+  CIDADES.forEach((nome, i) => {
+    const sal = 'zz' + nome;
+    munis.push({
+      uf: 'zz', cd: String(29000 + i * 8), cdi: null, nome, eleitores: Math.round(3000 + h(sal, 1) * 60000),
+      share13: Math.min(0.85, Math.max(0.15, 0.45 + (h(sal, 2) - 0.5) * 0.5)), comparec: 0.45 + h(sal, 3) * 0.2,
+      atraso: 0.2 + h(sal, 4) * 0.6, vies: (h(sal, 5) - 0.5) * 0.1, secoes: Math.max(1, Math.ceil((3000 + h(sal, 1) * 60000) / 400)),
+    });
   });
   const porCodigo = new Map(munis.map((m) => [m.uf + m.cd, m]));
   const porUf = new Map();
@@ -124,7 +135,7 @@ export function criarDemo(municipiosGeo) {
     let m = caminho.match(/^ele2026\/(900|901)\/config\/mun-e(\d{6})-cm\.json$/);
     if (m) {
       return ok({ dg: '25/10/2026', hg: '08:00:00', abr: [...porUf.entries()].map(([uf, lista]) => ({
-        cd: uf, ds: uf.toUpperCase(), mu: lista.map((x) => (x.cdi ? { cd: x.cd, cdi: x.cdi, nm: x.nome } : { cd: x.cd, nm: x.nome })),
+        cd: uf, ds: uf === 'zz' ? 'EXTERIOR' : uf.toUpperCase(), mu: lista.map((x) => (x.cdi ? { cd: x.cd, cdi: x.cdi, nm: x.nome } : { cd: x.cd, nm: x.nome })),
       })) });
     }
     m = caminho.match(/^ele2026\/(900|901)\/dados\/([a-z]{2})\/([a-z]{2})(\d{5})?-c0001-e(\d{6})-u\.json$/);

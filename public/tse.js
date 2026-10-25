@@ -17,8 +17,8 @@ function registrar(caminho, status, origem, ms) {
   if (diagnostico.length > LIMITE_DIAG) diagnostico.length = LIMITE_DIAG;
 }
 
-// O carimbo muda a cada 10 s: fura caches intermediários velhos, mas todos os
-// visitantes pedem a mesma URL na mesma janela e a CDN do TSE continua servindo.
+// A CDN do TSE ignora parâmetros (verificado: mesma resposta para valores diferentes), então
+// o carimbo não fura o cache dela; serve para caches intermediários entre o visitante e o TSE.
 const carimbo = () => Math.floor(Date.now() / 10000);
 
 async function lerProxy(caminho) {

@@ -59,12 +59,25 @@ h1 span { display: block; font-size: 13px; font-weight: 500; color: var(--suave)
   padding: 8px 16px 10px; border-bottom: 1px solid var(--borda);
 }
 .cands { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.cand { min-width: 0; }
-.cand.c22 { text-align: right; }
+/* Foto no lado de dentro de cada metade: os dois candidatos ficam frente a frente sobre a
+   barra da disputa. O nome ocupa a linha de cima inteira para não ser cortado. */
+.cand {
+  min-width: 0; display: grid; column-gap: 6px; align-items: end;
+  grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nome nome" "pct foto" "votos foto";
+}
+.cand.c22 { text-align: right; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "nome nome" "foto pct" "foto votos"; }
+.cand-nome { grid-area: nome; } .cand-pct { grid-area: pct; } .cand-votos { grid-area: votos; }
+.cand-foto {
+  grid-area: foto; display: block; height: 62px; width: auto; align-self: end; margin-bottom: -10px;
+  /* Some aos poucos na base, fundindo com a barra. Sem drop-shadow: a máscara corta a
+     sombra no limite da imagem e desenha um retângulo tingido em volta da foto. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent 100%); mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
+}
+.cand-foto.perdeu { opacity: .55; filter: grayscale(.6); }
 .cand-nome { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cand-nome small { font-weight: 500; color: var(--suave); font-size: 12px; }
 .c13 .cand-pct { color: var(--t13); } .c22 .cand-pct { color: var(--t22); }
-.cand-pct { font-size: 34px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em; }
+.cand-pct { font-size: 31px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em; }
 .cand-votos { font-size: 13px; color: var(--suave); }
 .cand-pct.vazio { color: var(--borda); }
 .selo {
@@ -114,6 +127,15 @@ main { padding: 12px 16px 8px; max-width: 1180px; margin: 0 auto; }
   background: var(--cartao) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238a909b' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 14px center;
   padding: 0 36px 0 12px; font-weight: 600; font-size: 16px; /* 16 px evita o zoom automático do iOS */
 }
+.exterior-cartao {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; margin: 0 0 12px; padding: 8px 12px;
+  background: var(--cartao); border: 1px solid var(--borda); border-radius: 12px; text-align: left; cursor: pointer; font-size: 14px;
+}
+.exterior-cartao[aria-pressed="true"] { border-color: var(--texto); }
+.ext-rotulo { font-weight: 700; white-space: nowrap; }
+.ext-numeros { flex: 1; min-width: 0; color: var(--suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+.ext-seta { font-size: 22px; line-height: 1; color: var(--suave); }
+.exterior-resumo { padding: 6px 2px 4px; }
 .progresso { font-size: 13px; color: var(--suave); margin: 0 0 10px; }
 
 .cartao-mapa, .cartao-tabela { scroll-margin-top: calc(var(--topo-demo) + 150px); }
@@ -190,9 +212,12 @@ td.sem { color: var(--suave); }
   .topo, .placar { padding-left: max(16px, calc((100vw - 1180px) / 2 + 16px)); padding-right: max(16px, calc((100vw - 1180px) / 2 + 16px)); }
   h1 { font-size: 22px; } h1 span { display: inline; margin-left: 8px; font-size: 15px; }
   .cand-pct { font-size: 46px; }
+  .cand-foto { height: 104px; margin-bottom: -12px; }
+  .cand { column-gap: 14px; }
   .cand-nome { font-size: 18px; }
   main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 0 16px; align-items: start; }
-  .aviso, .numeros, .horarios, .controles, .progresso { grid-column: 1 / -1; }
+  .aviso, .numeros, .horarios, .exterior-cartao, .controles, .progresso { grid-column: 1 / -1; }
+  .exterior-cartao { max-width: 560px; }
   .numeros { max-width: 560px; }
   table { font-size: 14px; }
   .controles { max-width: 560px; }

@@ -2,9 +2,13 @@
 // Fluxo: descobre a eleição no ele-c.json, lê BR + 27 UFs a cada 30 s e, sob demanda,
 // os municípios (UF escolhida a cada 60 s; Brasil inteiro a cada 180 s).
 /* global d3, topojson */
-import { diagnostico, usarDemo, modoAtual } from './tse.js';
-import { descobrirEleicao, lerResultado, lerMunicipios, publicado, normalizarNome } from './parser.js';
-import { criarMapa } from './mapa.js';
+// O sufixo ?v=dev vira o código do commit na publicação (workflow): cada versão nova tem
+// URLs novas e escapa do cache de 10 min que o GitHub Pages impõe.
+import { diagnostico, usarDemo, modoAtual } from './tse.js?v=dev';
+import { descobrirEleicao, lerResultado, lerMunicipios, publicado, normalizarNome } from './parser.js?v=dev';
+import { criarMapa } from './mapa.js?v=dev';
+
+const VERSAO = new URL(import.meta.url).searchParams.get('v') || 'dev';
 
 const UFS = ['ac', 'al', 'am', 'ap', 'ba', 'ce', 'df', 'es', 'go', 'ma', 'mg', 'ms', 'mt', 'pa', 'pb', 'pe', 'pi', 'pr', 'rj', 'rn', 'ro', 'rr', 'rs', 'sc', 'se', 'sp', 'to'];
 const NOME_UF = {
@@ -12,8 +16,11 @@ const NOME_UF = {
   go: 'Goiás', ma: 'Maranhão', mg: 'Minas Gerais', ms: 'Mato Grosso do Sul', mt: 'Mato Grosso', pa: 'Pará', pb: 'Paraíba',
   pe: 'Pernambuco', pi: 'Piauí', pr: 'Paraná', rj: 'Rio de Janeiro', rn: 'Rio Grande do Norte', ro: 'Rondônia', rr: 'Roraima',
   rs: 'Rio Grande do Sul', sc: 'Santa Catarina', se: 'Sergipe', sp: 'São Paulo', to: 'Tocantins',
+  zz: 'Exterior',
 };
-const DO_UF = { ac: 'do', al: 'de', am: 'do', ap: 'do', ba: 'da', ce: 'do', df: 'do', es: 'do', go: 'de', ma: 'do', mg: 'de', ms: 'de', mt: 'de', pa: 'do', pb: 'da', pe: 'de', pi: 'do', pr: 'do', rj: 'do', rn: 'do', ro: 'de', rr: 'de', rs: 'do', sc: 'de', se: 'de', sp: 'de', to: 'do' };
+// Votos de brasileiros no exterior: no TSE a "UF" é zz e os "municípios" são cidades.
+const EXT = 'zz';
+const DO_UF = { ac: 'do', al: 'de', am: 'do', ap: 'do', ba: 'da', ce: 'do', df: 'do', es: 'do', go: 'de', ma: 'do', mg: 'de', ms: 'de', mt: 'de', pa: 'do', pb: 'da', pe: 'de', pi: 'do', pr: 'do', rj: 'do', rn: 'do', ro: 'de', rr: 'de', rs: 'do', sc: 'de', se: 'de', sp: 'de', to: 'do', zz: 'no' };
 // A cor segue o número do candidato, nunca a posição na lista: se a liderança mudar,
 // o vermelho continua sendo do 13 e o azul do 22.
 const CAND = {
@@ -23,7 +30,11 @@ const CAND = {
 const ORDEM = ['13', '22'];
 const SATURA = 40; // pontos percentuais de margem em que a cor chega ao máximo
 const MINIMO = 0.18; // intensidade mínima: vantagens pequenas também aparecem
-const T_UF = 30e3, T_MUN_UF = 60e3, T_MUN_BR = 180e3, T_RETENTA = 30e3, PARALELO = 6;
+// A CDN do TSE guarda cada versão dos arquivos por até ~60 s e ignora parâmetros na URL;
+// abaixo disso ninguém que lê os arquivos públicos recebe antes. Por isso: o arquivo
+// nacional (pequeno) é conferido a cada 10 s e, quando muda, as UFs são lidas na hora.
+const T_BR = 10e3, T_COMPLETO = 60e3, T_MUN_UF = 60e3, T_MUN_BR = 180e3, T_MUN_MIN = 30e3;
+const T_RETENTA = 30e3, T_VERSAO = 60e3, PARALELO = 6;
 const MSG_ANTES = 'O TSE ainda não publicou o resultado; a divulgação começa após o fechamento das urnas (17h de Brasília).';
 
 const params = new URLSearchParams(location.search);
@@ -34,8 +45,9 @@ const est = {
   eleicao: null, descoberta: null, br: null, ufs: {}, mun: new Map(),
   munCfg: [], tsePorIbge: new Map(), semLigacao: [],
   nivel: params.get('nivel') === 'municipios' ? 'municipios' : 'estados',
-  uf: UFS.includes((params.get('uf') || '').toLowerCase()) ? params.get('uf').toLowerCase() : null,
-  ultimaLeitura: null, statusBr: null, limiteTabela: 60,
+  uf: [...UFS, EXT].includes((params.get('uf') || '').toLowerCase()) ? params.get('uf').toLowerCase() : null,
+  ultimaLeitura: null, ultimaConferencia: null, assinaturaBr: null, ultimoCompleto: 0, ultimaCargaMun: 0,
+  statusBr: null, limiteTabela: 60,
 };
 
 // ---------- formatação ----------
@@ -74,7 +86,7 @@ function resultadoMun(f) {
 // ---------- mapa ----------
 let geo, mapa;
 async function carregarGeo() {
-  const r = await fetch('geo/brasil.topo.json');
+  const r = await fetch('geo/brasil.topo.json?v=dev');
   const topo = await r.json();
   geo = {
     municipios: topojson.feature(topo, topo.objects.municipios),
@@ -106,9 +118,14 @@ function iniciarMapa() {
 
 function aplicarVista() {
   const munis = est.nivel === 'municipios' || !!est.uf;
-  mapa.mostrar({ modo: est.nivel, uf: est.uf ? est.uf.toUpperCase() : null });
+  const exterior = est.uf === EXT;
+  // O exterior não tem mapa: no lugar dele entra um resumo com os números.
+  $('#mapa').hidden = exterior; $('#legenda').hidden = exterior; $('#dica-uso').hidden = exterior;
+  $('#exterior-resumo').hidden = !exterior;
+  if (exterior) $('#zoom-reset').hidden = true;
+  else mapa.mostrar({ modo: est.nivel, uf: est.uf ? est.uf.toUpperCase() : null });
   $('#voltar').hidden = !est.uf;
-  $('#titulo-mapa').textContent = est.uf ? NOME_UF[est.uf] : munis ? 'Brasil por município' : 'Brasil por estado';
+  $('#titulo-mapa').textContent = exterior ? 'Votos no exterior' : est.uf ? NOME_UF[est.uf] : munis ? 'Brasil por município' : 'Brasil por estado';
   $('#dica-uso').textContent = est.uf
     ? 'Toque num município para ver os números. Use dois dedos para ampliar.'
     : munis ? 'Toque num município para ver os números. Use dois dedos para ampliar.' : 'Toque num estado para ver os municípios. Use dois dedos para ampliar.';
@@ -118,9 +135,11 @@ function aplicarVista() {
   const p = new URLSearchParams(location.search);
   est.uf ? p.set('uf', est.uf.toUpperCase()) : p.delete('uf');
   est.nivel === 'municipios' ? p.set('nivel', 'municipios') : p.delete('nivel');
+  p.delete('_v'); // marca usada só para furar o cache do HTML na troca de versão
   history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : '') + location.hash);
   pintarMapa();
   desenharTabela();
+  desenharExterior();
 }
 
 function pintarMapa() {
@@ -143,7 +162,24 @@ function ficha(tipo, f) {
     if (!est.tsePorIbge.has(f.properties.ibge)) sub += ' · sem correspondência no TSE';
   }
   if (tipo === 'uf' && est.uf !== f.properties.uf.toLowerCase()) acao = `<button type="button" class="ficha-acao" data-uf="${f.properties.uf.toLowerCase()}">Ver municípios</button>`;
+  return fichaHtml(titulo, sub, r, acao);
+}
+function fichaHtml(titulo, sub, r, acao = '') {
   return `<div class="ficha-titulo">${escapar(titulo)}</div><div class="ficha-sub">${escapar(sub)}${r ? ' · ' + pct(r.pst) + ' das seções apuradas' : ''}</div>${linhasCand(r)}${acao}`;
+}
+
+// Cartão do exterior abaixo do placar e resumo no lugar do mapa quando ele é escolhido.
+function desenharExterior() {
+  const r = resultadoUf(EXT);
+  const ok = publicado(r);
+  const partes = ok ? ORDEM.map((n) => { const c = doNumero(r, n); return c ? `<b style="color:var(--t${n})">${CAND[n].nome.split(' ')[0]} ${pct(c.pct, 1)}</b>` : ''; }).join(' · ') : 'aguardando o TSE';
+  $('#exterior-cartao').innerHTML = `<span class="ext-rotulo">Votos no exterior</span><span class="ext-numeros">${partes}${r ? ` <small>· ${pct(r.pst, 0)} apurado</small>` : ''}</span><span class="ext-seta" aria-hidden="true">›</span>`;
+  $('#exterior-cartao').setAttribute('aria-pressed', String(est.uf === EXT));
+  if (est.uf === EXT) {
+    const cidades = est.munCfg.filter((m) => m.uf === EXT).length;
+    $('#exterior-resumo').innerHTML = fichaHtml('Brasileiros que votam fora do país', `${cidades ? fmtInt.format(cidades) + ' cidades · ' : ''}${r?.eleitores ? fmtInt.format(r.eleitores) + ' eleitores' : ''}`, r)
+      + '<p class="ficha-sub">Os votos do exterior já entram no total nacional do placar. Abaixo, o resultado por cidade.</p>';
+  }
 }
 function linhasCand(r) {
   if (!r || !publicado(r)) {
@@ -188,6 +224,8 @@ function desenharPlacar() {
     // Antes da divulgação, um 0,00% apagado: o traço solto em fonte grande parecia defeito.
     alvo.textContent = ok && c ? pct(c.pct) : '0,00%';
     alvo.classList.toggle('vazio', !(ok && c));
+    // Com o resultado definido, a foto de quem não foi eleito esmaece.
+    el.querySelector('.cand-foto').classList.toggle('perdeu', !!(ok && r.cand.some((x) => x.eleito) && c && !c.eleito));
     el.querySelector('.cand-votos').innerHTML = ok && c ? `${fmtInt.format(c.votos)} votos${c.eleito ? ' <span class="selo">ELEITO</span>' : ''}` : '&nbsp;';
   }
   const c13 = doNumero(r, '13'), c22 = doNumero(r, '22');
@@ -208,7 +246,7 @@ function desenharPlacar() {
   if (ok && r.nulos != null) itens.push(['Nulos', `${pct(r.pNulos, 1)} <small>${fmtCompacto.format(r.nulos)}</small>`]);
   const horas = [];
   if (r?.dg) horas.push(`TSE: <b>${escapar(r.hg || '')}</b> de ${escapar(r.dg)}`);
-  if (est.ultimaLeitura) horas.push(`última leitura: <b>${horaBrasilia(est.ultimaLeitura)}</b>`);
+  if (est.ultimaConferencia) horas.push(`conferido <b id="idade">agora</b> (a cada 10 s)`);
   $('#horarios').innerHTML = horas.join(' · ');
   $('#numeros').innerHTML = itens.map(([t, v]) => `<div><dt>${t}</dt><dd>${v}</dd></div>`).join('');
 
@@ -228,14 +266,14 @@ function aviso(msg, erro = false) {
 // ---------- tabela ----------
 function desenharTabela() {
   const thead = $('#tabela thead'), tbody = $('#tabela tbody');
-  thead.innerHTML = `<tr><th class="col-local">${est.uf ? 'Município' : 'Estado'}</th><th class="col-apur">Apur.</th>${ORDEM.map((n) => `<th class="col-c">${CAND[n].nome.split(' ')[0]}</th>`).join('')}<th class="col-dif">Dif.</th></tr>`;
+  thead.innerHTML = `<tr><th class="col-local">${est.uf === EXT ? 'Cidade' : est.uf ? 'Município' : 'Estado'}</th><th class="col-apur">Apur.</th>${ORDEM.map((n) => `<th class="col-c">${CAND[n].nome.split(' ')[0]}</th>`).join('')}<th class="col-dif">Dif.</th></tr>`;
   let linhas;
   if (est.uf) {
-    $('#titulo-tabela').textContent = `Municípios ${DO_UF[est.uf]} ${NOME_UF[est.uf]}`;
+    $('#titulo-tabela').textContent = est.uf === EXT ? 'Cidades no exterior' : `Municípios ${DO_UF[est.uf]} ${NOME_UF[est.uf]}`;
     linhas = est.munCfg.filter((m) => m.uf === est.uf).map((m) => ({ chave: m.cd, nome: tituloCaixa(m.nome), r: est.mun.get(m.cd)?.resultado || null }));
   } else {
     $('#titulo-tabela').textContent = 'Por estado';
-    linhas = UFS.map((uf) => ({ chave: uf, nome: NOME_UF[uf], uf, r: resultadoUf(uf) }));
+    linhas = [...UFS, EXT].map((uf) => ({ chave: uf, nome: NOME_UF[uf], uf, r: resultadoUf(uf) }));
   }
   linhas.sort((a, b) => (b.r?.totalCand || 0) - (a.r?.totalCand || 0) || a.nome.localeCompare(b.nome, 'pt-BR'));
   const total = linhas.length;
@@ -255,9 +293,10 @@ function desenharTabela() {
 }
 
 // ---------- leituras ----------
-async function atualizarEstados() {
+// brPronto: resultado nacional que acabou de ser lido na conferência de 10 s (evita reler).
+async function atualizarEstados(brPronto = null) {
   const { ciclo, cd } = est.eleicao;
-  const pedidos = [['br', lerResultado(ciclo, cd, 'br')], ...UFS.map((uf) => [uf, lerResultado(ciclo, cd, uf)])];
+  const pedidos = [['br', brPronto ? Promise.resolve(brPronto) : lerResultado(ciclo, cd, 'br')], ...[...UFS, EXT].map((uf) => [uf, lerResultado(ciclo, cd, uf)])];
   const res = await Promise.allSettled(pedidos.map((p) => p[1]));
   res.forEach((s, i) => {
     const chave = pedidos[i][0];
@@ -268,12 +307,31 @@ async function atualizarEstados() {
     }
     if (chave === 'br') est.statusBr = s.value.status;
   });
-  est.ultimaLeitura = new Date();
+  est.ultimaLeitura = est.ultimaConferencia = new Date();
+  est.ultimoCompleto = Date.now();
+  est.assinaturaBr = assinatura(est.br?.resultado);
   const r = est.br?.resultado;
   if (est.statusBr === 404 || (r && !publicado(r))) aviso(MSG_ANTES);
   else if (!r) aviso(`Não foi possível ler o resultado nacional (situação: ${est.statusBr}). Nova tentativa em 30 s.`, true);
   else aviso('');
-  desenharPlacar(); pintarMapa(); desenharTabela(); atualizarDiag();
+  desenharPlacar(); pintarMapa(); desenharTabela(); desenharExterior(); atualizarDiag();
+}
+
+// Identifica uma versão do arquivo nacional: idg é o identificador de geração do TSE.
+const assinatura = (r) => (r ? [r.idg, r.dg, r.hg, r.pst, r.totalCand].join('|') : null);
+
+// Conferência rápida: lê só o arquivo nacional; se mudou (ou passou 1 min), lê tudo.
+async function conferirBr() {
+  const { ciclo, cd } = est.eleicao;
+  const res = await lerResultado(ciclo, cd, 'br');
+  est.ultimaConferencia = new Date();
+  const mudou = res.resultado && assinatura(res.resultado) !== est.assinaturaBr;
+  if (mudou || Date.now() - est.ultimoCompleto >= T_COMPLETO) {
+    await atualizarEstados(res);
+    // Nova divulgação do TSE: os municípios também andaram; relê se a última carga não é recente.
+    if (mudou && !carga.ativa && Date.now() - est.ultimaCargaMun >= T_MUN_MIN) cicloMunicipios();
+  }
+  atualizarIdade();
 }
 
 // Fila de municípios com até 6 leituras simultâneas. Uma troca de recorte cancela a carga
@@ -282,14 +340,15 @@ const carga = { geracao: 0, ativa: false, timer: null };
 async function cicloMunicipios() {
   clearTimeout(carga.timer);
   const geracao = ++carga.geracao;
-  const alvo = est.uf ? est.munCfg.filter((m) => m.uf === est.uf) : est.nivel === 'municipios' ? est.munCfg : [];
+  const alvo = est.uf ? est.munCfg.filter((m) => m.uf === est.uf) : est.nivel === 'municipios' ? est.munCfg.filter((m) => m.uf !== EXT) : [];
   // Antes da divulgação não há o que ler nos municípios; poupa a rede de quem já abriu a página.
   if (!alvo.length || !publicado(est.br?.resultado)) {
     $('#progresso').hidden = true;
-    if (alvo.length) carga.timer = setTimeout(cicloMunicipios, T_UF);
+    if (alvo.length) carga.timer = setTimeout(cicloMunicipios, T_COMPLETO);
     return;
   }
   carga.ativa = true;
+  est.ultimaCargaMun = Date.now();
   let feitos = 0, falhas = 0, ultimaPintura = 0;
   const mostrar = () => {
     $('#progresso').hidden = false;
@@ -316,7 +375,7 @@ async function cicloMunicipios() {
   carga.ativa = false;
   mostrar();
   setTimeout(() => { if (geracao === carga.geracao) $('#progresso').hidden = true; }, 2500);
-  pintarMapa(); desenharTabela(); atualizarDiag();
+  pintarMapa(); desenharTabela(); desenharExterior(); atualizarDiag();
   carga.timer = setTimeout(cicloMunicipios, est.uf ? T_MUN_UF : T_MUN_BR);
 }
 
@@ -327,6 +386,7 @@ async function carregarConfigMunicipios() {
   est.munCfg = lista;
   est.tsePorIbge.clear(); est.semLigacao = [];
   for (const m of lista) {
+    if (m.uf === EXT) continue; // cidades do exterior não estão no mapa
     let ibge = m.cdi && geo.ibges.has(m.cdi) ? m.cdi : null;
     if (!ibge) ibge = geo.porNome.get(normalizarNome(m.nome) + '|' + m.uf) || null;
     if (ibge) est.tsePorIbge.set(ibge, m.cd); else est.semLigacao.push(`${m.nome}/${m.uf.toUpperCase()}`);
@@ -359,18 +419,46 @@ function lacoEstados() {
   clearTimeout(timerUf);
   timerUf = setTimeout(async () => {
     if (!document.hidden) {
-      await atualizarEstados();
+      try { await conferirBr(); } catch (e) { /* uma falha de rede não para o laço */ }
       if (!est.munCfg.length) await carregarConfigMunicipios();
     }
     lacoEstados();
-  }, T_UF);
+  }, T_BR);
 }
 // Aba em segundo plano não lê nada (bateria e franquia de dados do celular); ao voltar, lê na hora.
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden || !est.eleicao) return;
+  if (document.hidden) return;
+  conferirVersao();
+  if (!est.eleicao) return;
   atualizarEstados().then(lacoEstados);
   if (!carga.ativa) cicloMunicipios();
 });
+
+// "há 7 s": mostra que o painel está vivo mesmo quando o TSE não publicou nada novo.
+function atualizarIdade() {
+  const el = $('#idade');
+  if (!el || !est.ultimaConferencia) return;
+  const s = Math.max(0, Math.round((Date.now() - est.ultimaConferencia) / 1000));
+  el.textContent = s < 2 ? 'agora' : `há ${s} s`;
+}
+setInterval(atualizarIdade, 1000);
+
+// Troca de versão do site: o HTML fica até 10 min no cache do navegador (regra do GitHub
+// Pages). A página confere versao.json e, se saiu versão nova, recarrega com um parâmetro
+// novo na URL, que obriga o navegador a buscar o HTML de novo.
+async function conferirVersao() {
+  if (VERSAO === 'dev' || DEMO) return; // no demo não recarrega: atrapalharia a apresentação
+  try {
+    const r = await fetch('versao.json?t=' + Date.now(), { cache: 'no-store' });
+    const { v } = await r.json();
+    if (v && v !== VERSAO) {
+      const u = new URL(location.href);
+      u.searchParams.set('_v', v);
+      location.replace(u.toString());
+    }
+  } catch { /* sem versao.json (servidor local): segue a vida */ }
+}
+setInterval(() => { if (!document.hidden) conferirVersao(); }, T_VERSAO);
 
 function escolherUf(uf) {
   est.uf = uf || null;
@@ -401,12 +489,14 @@ function atualizarDiag() {
 // ---------- início ----------
 function ligarControles() {
   const sel = $('#uf');
+  sel.insertAdjacentHTML('beforeend', `<option value="${EXT}">Exterior</option>`);
   sel.insertAdjacentHTML('beforeend', UFS.slice().sort((a, b) => NOME_UF[a].localeCompare(NOME_UF[b], 'pt-BR')).map((uf) => `<option value="${uf}">${NOME_UF[uf]}</option>`).join(''));
   sel.onchange = () => escolherUf(sel.value);
   document.querySelectorAll('.segmentado button').forEach((b) => {
     b.onclick = () => { est.nivel = b.dataset.nivel; aplicarVista(); if (est.eleicao) cicloMunicipios(); };
   });
   $('#voltar').onclick = () => escolherUf(null);
+  $('#exterior-cartao').onclick = () => escolherUf(est.uf === EXT ? null : EXT);
   $('#painel-fechar').onclick = fecharPainel;
   $('#painel').addEventListener('click', (ev) => {
     const b = ev.target.closest('[data-uf]');
@@ -417,6 +507,11 @@ function ligarControles() {
     const tr = ev.target.closest('tr');
     if (!tr) return;
     if (tr.dataset.uf) { escolherUf(tr.dataset.uf); return; }
+    if (est.uf === EXT) {
+      const m = est.munCfg.find((x) => x.uf === EXT && x.cd === tr.dataset.chave);
+      if (m) abrirPainel(fichaHtml(tituloCaixa(m.nome), 'Exterior', est.mun.get(m.cd)?.resultado || null));
+      return;
+    }
     const f = geo.municipios.features.find((x) => est.tsePorIbge.get(x.properties.ibge) === tr.dataset.chave);
     if (f) abrirPainel(ficha('mun', f));
   });
@@ -437,13 +532,14 @@ async function iniciar() {
     return;
   }
   if (DEMO) {
-    const { criarDemo } = await import('./demo.js');
+    const { criarDemo } = await import('./demo.js?v=dev');
     usarDemo(criarDemo(geo.municipios.features));
   }
   iniciarMapa();
   desenharLegenda();
   aplicarVista();
   iniciarDados();
+  conferirVersao();
 }
 
 iniciar();

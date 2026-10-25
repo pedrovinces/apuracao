@@ -1,6 +1,6 @@
 // Interpretação dos arquivos do TSE. O formato muda entre eleições, então os campos são
 // procurados pelo nome em qualquer nível do JSON, e não por uma posição fixa.
-import { lerJSON } from './tse.js';
+import { lerJSON } from './tse.js?v=dev';
 
 // Números do TSE vêm como texto, com vírgula decimal ("47,03").
 export function num(v) {
@@ -82,6 +82,7 @@ export function interpretar(dados) {
     cand,
     totalCand,
     pst: num(achar(dados, 'pstn')) ?? num(achar(dados, 'pst')) ?? 0,
+    idg: achar(dados, 'idg') || null,
     dg: achar(dados, 'dg') || null,
     hg: achar(dados, 'hg') || null,
     eleitores,
@@ -166,7 +167,7 @@ export async function lerMunicipios(ciclo, cd) {
   const abr = achar(res.dados, 'abr', Array.isArray) || [];
   for (const a of abr) {
     const uf = String(a.cd || '').toLowerCase();
-    if (!/^[a-z]{2}$/.test(uf) || uf === 'br' || uf === 'zz') continue; // zz = exterior, sem mapa
+    if (!/^[a-z]{2}$/.test(uf) || uf === 'br') continue; // zz (exterior) entra: tem tabela própria
     for (const m of a.mu || []) lista.push({ uf, cd: String(m.cd).padStart(5, '0'), cdi: m.cdi ? String(m.cdi) : null, nome: m.nm || '' });
   }
   return { status: 200, lista };
