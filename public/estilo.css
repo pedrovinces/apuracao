@@ -163,6 +163,13 @@ h2 { font-size: 16px; margin: 0; flex: 1; }
 .legenda .caixa { display: inline-block; width: 12px; height: 10px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
 .dica-uso { font-size: 12px; color: var(--suave); margin: 6px 2px 0; }
 
+.mini-apur { display: block; height: 4px; margin: 4px 0 0 auto; width: 100%; max-width: 44px; background: var(--borda); border-radius: 99px; overflow: hidden; }
+.mini-apur i { display: block; height: 100%; background: var(--texto); border-radius: 99px; transition: width .6s ease; }
+.apur-regiao { margin: 2px 0 10px; }
+.apur-regiao-rotulo { display: flex; justify-content: space-between; font-size: 13px; color: var(--suave); }
+.apur-regiao-rotulo b { color: var(--texto); font-size: 15px; }
+.barra-apurado.grossa { height: 10px; margin: 4px 0 3px; }
+.apur-regiao small { font-size: 12px; color: var(--suave); }
 .resumo-tabela { font-size: 12px; color: var(--suave); margin: 4px 0 0; }
 .tabela-rolagem { margin: 6px -10px 0; }
 table { width: 100%; border-collapse: collapse; font-size: 13.5px; table-layout: fixed; }

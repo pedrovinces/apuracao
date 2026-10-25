@@ -191,7 +191,9 @@ function desenharRegioes() {
     const r = resultadoRegiao(reg);
     const sec = r && r.secoesTotal ? `${fmtInt.format(r.secoesApuradas)} de ${fmtInt.format(r.secoesTotal)} seções` : '';
     const falta = r?.faltando?.length ? ` · faltam dados de ${r.faltando.join(', ')} (soma parcial)` : '';
-    $('#regiao-resumo').innerHTML = fichaHtml(`Região ${REGIOES[reg].nome}`, `${REGIOES[reg].ufs.length} estados${sec ? ' · ' + sec : ''}${falta}`, r);
+    // Indicador gráfico da apuração da região: barra com seções totalizadas / total.
+    const barra = r && r.secoesTotal ? `<div class="apur-regiao"><div class="apur-regiao-rotulo"><span>Seções apuradas</span><b>${pct(r.pst)}</b></div><div class="barra-apurado grossa"><span style="width:${Math.min(100, r.pst)}%"></span></div><small>${fmtInt.format(r.secoesApuradas)} de ${fmtInt.format(r.secoesTotal)} seções</small></div>` : '';
+    $('#regiao-resumo').innerHTML = barra + fichaHtml(`Região ${REGIOES[reg].nome}`, `${REGIOES[reg].ufs.length} estados${falta}`, r);
   }
   const cartao = $('#cartao-regioes');
   cartao.hidden = !!est.uf || !!est.regiao;
@@ -261,6 +263,8 @@ function linhasCand(r) {
   }).join('');
 }
 function tipoCarregando() {
+  if (!est.eleicao) return 'Procurando a eleição no TSE…';
+  if (est.carregandoUfs) return 'Carregando os dados do TSE…';
   return carga.ativa ? 'Lendo os municípios no TSE…' : '';
 }
 function mostrarDica(html, ev) {
@@ -542,7 +546,9 @@ function linhasHtml(tabela, linhas) {
       const conteudo = valor == null ? (contas.delete(k), '–') : numHtml(k, valor, tipo, 'span', extra);
       return `<td class="${classe}${b.cls}"${b.estilo}>${conteudo}</td>`;
     };
-    const apur = td('apur', 'pct-apur', r ? r.pst : null, 'pct0');
+    let apur = td('apur', 'pct-apur', r ? r.pst : null, 'pct0');
+    // Regiões: barrinha de progresso das seções apuradas dentro da célula.
+    if (tabela === 'regioes' && r) apur = apur.replace(/<\/td>$/, `<span class="mini-apur" aria-hidden="true"><i style="width:${Math.min(100, r.pst)}%"></i></span></td>`);
     const cels = ORDEM.map((n) => {
       const c = doNumero(r, n);
       return td(n, `v${n}`, ok && c ? c.pct : null, 'pct1', lider === n ? 'lid' : '');
@@ -560,7 +566,15 @@ function linhasHtml(tabela, linhas) {
 // brPronto: resultado nacional que acabou de ser lido na conferência de 5 s (evita reler).
 async function atualizarEstados(brPronto = null) {
   const { ciclo, cd } = est.eleicao;
-  const pedidos = [['br', brPronto ? Promise.resolve(brPronto) : lerResultado(ciclo, cd, 'br')], ...[...UFS, EXT].map((uf) => [uf, lerResultado(ciclo, cd, uf)])];
+  est.carregandoUfs = true;
+  // Cada estado entra na tela assim que chega (redesenho agrupado a cada 0,4 s): no pico,
+  // com o TSE recusando leituras, esperar os 28 deixava tudo vazio por muitos segundos.
+  let redesenho = null;
+  const redesenhar = () => { if (!redesenho) redesenho = setTimeout(() => { redesenho = null; pintarMapa(); desenharTabela(); desenharExterior(); desenharRegioes(); }, 400); };
+  const pedidos = [['br', brPronto ? Promise.resolve(brPronto) : lerResultado(ciclo, cd, 'br')], ...[...UFS, EXT].map((uf) => [uf, lerResultado(ciclo, cd, uf).then((v) => {
+    if (v.resultado) { est.ufs[uf] = v; redesenhar(); }
+    return v;
+  })])];
   const res = await Promise.allSettled(pedidos.map((p) => p[1]));
   // Estados recusados no pico (429) e ainda sem nenhum dado: mais uma tentativa, um por vez.
   for (let i = 1; i < pedidos.length; i++) {
@@ -580,6 +594,8 @@ async function atualizarEstados(brPronto = null) {
     }
     if (chave === 'br') est.statusBr = s.value.status;
   });
+  est.carregandoUfs = false;
+  clearTimeout(redesenho);
   est.ultimaLeitura = est.ultimaConferencia = new Date();
   reiniciarAnel();
   est.ultimoCompleto = Date.now();
