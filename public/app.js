@@ -7,6 +7,7 @@
 import { diagnostico, usarDemo, modoAtual } from './tse.js?v=dev';
 import { descobrirEleicao, lerResultado, lerMunicipios, publicado, normalizarNome } from './parser.js?v=dev';
 import { criarMapa } from './mapa.js?v=dev';
+import { iniciarMetricas, evento } from './metricas.js?v=dev';
 
 const VERSAO = new URL(import.meta.url).searchParams.get('v') || 'dev';
 
@@ -211,6 +212,7 @@ function mostrarDica(html, ev) {
 }
 function esconderDica() { $('#dica').hidden = true; }
 function abrirPainel(html) {
+  evento('abriu-detalhe');
   $('#painel-conteudo').innerHTML = html;
   $('#painel').hidden = false;
 }
@@ -647,6 +649,7 @@ async function conferirVersao() {
 setInterval(() => { if (!document.hidden) conferirVersao(); }, T_VERSAO);
 
 function escolherUf(uf) {
+  if (uf) evento(uf === EXT ? 'abriu-exterior' : 'escolheu-estado', { uf: uf.toUpperCase() });
   est.uf = uf || null;
   est.limiteTabela = 60;
   fecharPainel();
@@ -679,7 +682,7 @@ function ligarControles() {
   sel.insertAdjacentHTML('beforeend', UFS.slice().sort((a, b) => NOME_UF[a].localeCompare(NOME_UF[b], 'pt-BR')).map((uf) => `<option value="${uf}">${NOME_UF[uf]}</option>`).join(''));
   sel.onchange = () => escolherUf(sel.value);
   document.querySelectorAll('.segmentado button').forEach((b) => {
-    b.onclick = () => { est.nivel = b.dataset.nivel; aplicarVista(); if (est.eleicao) cicloMunicipios(); };
+    b.onclick = () => { est.nivel = b.dataset.nivel; evento('nivel', { nivel: est.nivel }); aplicarVista(); if (est.eleicao) cicloMunicipios(); };
   });
   $('#voltar').onclick = () => escolherUf(null);
   $('#exterior-cartao').onclick = () => escolherUf(est.uf === EXT ? null : EXT);
@@ -707,6 +710,7 @@ function ligarControles() {
 }
 
 async function iniciar() {
+  iniciarMetricas();
   if (DEMO) { document.body.classList.add('demo'); $('#faixa-demo').hidden = false; }
   lerTema();
   ligarControles();
