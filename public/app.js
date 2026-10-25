@@ -13,6 +13,7 @@ const NOME_UF = {
   pe: 'Pernambuco', pi: 'Piauí', pr: 'Paraná', rj: 'Rio de Janeiro', rn: 'Rio Grande do Norte', ro: 'Rondônia', rr: 'Roraima',
   rs: 'Rio Grande do Sul', sc: 'Santa Catarina', se: 'Sergipe', sp: 'São Paulo', to: 'Tocantins',
 };
+const DO_UF = { ac: 'do', al: 'de', am: 'do', ap: 'do', ba: 'da', ce: 'do', df: 'do', es: 'do', go: 'de', ma: 'do', mg: 'de', ms: 'de', mt: 'de', pa: 'do', pb: 'da', pe: 'de', pi: 'do', pr: 'do', rj: 'do', rn: 'do', ro: 'de', rr: 'de', rs: 'do', sc: 'de', se: 'de', sp: 'de', to: 'do' };
 // A cor segue o número do candidato, nunca a posição na lista: se a liderança mudar,
 // o vermelho continua sendo do 13 e o azul do 22.
 const CAND = {
@@ -43,7 +44,8 @@ const fmtCompacto = new Intl.NumberFormat('pt-BR', { notation: 'compact', maximu
 const pct = (v, casas = 2) => (v == null ? '–' : v.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas }) + '%');
 const horaBrasilia = (d) => d.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour12: false });
 const nomeCand = (c) => CAND[c.n]?.nome || tituloCaixa(c.nome);
-const tituloCaixa = (s) => String(s).toLowerCase().replace(/(^|\s)\S/g, (m) => m.toUpperCase());
+// O TSE manda nomes em caixa alta; preposições ficam minúsculas ("Cachoeira dos Índios").
+const tituloCaixa = (s) => String(s).toLowerCase().replace(/(^|\s)\S/g, (m) => m.toUpperCase()).replace(/ (D[aeo]s?|E) /g, (m) => m.toLowerCase());
 const escapar = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const doNumero = (r, n) => r?.cand.find((c) => c.n === n);
 
@@ -226,7 +228,7 @@ function desenharTabela() {
   thead.innerHTML = `<tr><th class="col-local">${est.uf ? 'Município' : 'Estado'}</th><th class="col-apur">Apur.</th>${ORDEM.map((n) => `<th class="col-c">${CAND[n].nome.split(' ')[0]}</th>`).join('')}<th class="col-dif">Dif.</th></tr>`;
   let linhas;
   if (est.uf) {
-    $('#titulo-tabela').textContent = `Municípios de ${NOME_UF[est.uf]}`;
+    $('#titulo-tabela').textContent = `Municípios ${DO_UF[est.uf]} ${NOME_UF[est.uf]}`;
     linhas = est.munCfg.filter((m) => m.uf === est.uf).map((m) => ({ chave: m.cd, nome: tituloCaixa(m.nome), r: est.mun.get(m.cd)?.resultado || null }));
   } else {
     $('#titulo-tabela').textContent = 'Por estado';
@@ -288,7 +290,9 @@ async function cicloMunicipios() {
   let feitos = 0, falhas = 0, ultimaPintura = 0;
   const mostrar = () => {
     $('#progresso').hidden = false;
-    $('#progresso-txt').textContent = `Lendo municípios no TSE: ${fmtInt.format(feitos)} de ${fmtInt.format(alvo.length)}${falhas ? ` (${falhas} sem resposta)` : ''}`;
+    // No Brasil inteiro são milhares de arquivos por ciclo: no celular isso pesa na franquia.
+    const peso = alvo.length > 1000 ? ' · consome mais dados; escolha um estado para economizar' : '';
+    $('#progresso-txt').textContent = `Lendo municípios no TSE: ${fmtInt.format(feitos)} de ${fmtInt.format(alvo.length)}${falhas ? ` (${falhas} sem resposta)` : ''}${peso}`;
     $('#progresso-barra').style.width = (100 * feitos) / alvo.length + '%';
   };
   mostrar();
