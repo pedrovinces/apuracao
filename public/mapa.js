@@ -28,8 +28,10 @@ export function criarMapa(alvo, geo, eventos) {
   function desenhar() {
     largura = alvo.clientWidth || 360;
     const alvoUf = vista.uf ? geo.estados.features.find((f) => f.properties.uf === vista.uf) : null;
+    // Região: apenas os estados dela, com o enquadramento ajustado a eles.
+    const daRegiao = vista.regiao ? geo.estados.features.filter((f) => vista.regiao.includes(f.properties.uf)) : null;
     // Brasil é quase quadrado; um estado alongado (MG, BA) pede menos altura.
-    const foco = alvoUf || { type: 'FeatureCollection', features: geo.estados.features };
+    const foco = alvoUf || { type: 'FeatureCollection', features: daRegiao || geo.estados.features };
     const [[x0, y0], [x1, y1]] = d3.geoPath(d3.geoMercator().scale(1).translate([0, 0])).bounds(foco);
     const proporcao = Math.min(1.15, Math.max(0.6, (y1 - y0) / (x1 - x0)));
     altura = Math.round(Math.min(largura * proporcao, window.innerHeight * 0.72));
@@ -38,10 +40,10 @@ export function criarMapa(alvo, geo, eventos) {
     const caminho = d3.geoPath(proj);
 
     const mostrarMun = vista.modo === 'municipios' || !!vista.uf;
-    const munis = mostrarMun ? geo.municipios.features.filter((f) => !vista.uf || f.properties.uf === vista.uf) : [];
+    const munis = mostrarMun ? geo.municipios.features.filter((f) => (vista.uf ? f.properties.uf === vista.uf : !daRegiao || vista.regiao.includes(f.properties.uf))) : [];
     gMun.selectAll('path').data(munis, (f) => f.properties.ibge)
       .join('path').attr('d', caminho).attr('class', 'mun');
-    const ufs = vista.uf ? [alvoUf] : geo.estados.features;
+    const ufs = vista.uf ? [alvoUf] : daRegiao || geo.estados.features;
     gUf.selectAll('path').data(ufs, caixa)
       .join('path').attr('d', caminho)
       .attr('class', mostrarMun ? 'uf contorno' : 'uf');

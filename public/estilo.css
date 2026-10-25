@@ -340,7 +340,9 @@ tr.linha-mudou { animation: faixa 2.4s ease-out; }
   .numeros { max-width: 560px; }
   table { font-size: 14px; }
   .controles { max-width: 560px; }
-  .cartao-tabela { max-height: calc(100vh - 210px); overflow: auto; position: sticky; top: 190px; }
+  .cartao-mapa { grid-column: 1; grid-row: span 2; }
+  .cartao-tabela { grid-column: 2; max-height: calc(100vh - 210px); overflow: auto; position: sticky; top: 190px; }
+  .cartao-regioes { position: static; max-height: none; }
   .painel { bottom: 16px; border-radius: 18px; }
   .dica-uso { display: none; }
 }

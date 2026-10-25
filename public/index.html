@@ -65,10 +65,17 @@
       <h2 id="titulo-mapa">Brasil por estado</h2>
       <button type="button" id="zoom-reset" class="botao-leve" hidden>Ver inteiro</button>
     </div>
+    <div id="regiao-resumo" class="exterior-resumo" hidden></div>
     <div id="mapa" class="mapa"></div>
     <div id="exterior-resumo" class="exterior-resumo" hidden></div>
     <div class="legenda" id="legenda"></div>
     <p class="dica-uso" id="dica-uso">Toque num estado para ver os municípios. Use dois dedos para ampliar.</p>
+  </section>
+
+  <section class="cartao-tabela cartao-regioes" id="cartao-regioes">
+    <h2>Por região</h2>
+    <p class="resumo-tabela">Soma dos estados de cada região; apurado = seções totalizadas sobre o total da região. * soma parcial: falta o arquivo de algum estado.</p>
+    <div class="tabela-rolagem"><table id="tabela-regioes"><thead></thead><tbody></tbody></table></div>
   </section>
 
   <section class="cartao-tabela">

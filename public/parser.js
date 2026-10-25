@@ -91,6 +91,9 @@ export function interpretar(dados) {
     pBrancos: num(achar(v, 'pvbn')) ?? num(achar(v, 'pvb')),
     nulos: num(achar(v, 'tvn')),
     pNulos: num(achar(v, 'ptvnn')) ?? num(achar(v, 'ptvn')),
+    // Seções (s.ts = total, s.st = totalizadas): servem para somar a apuração por região.
+    secoesTotal: num(achar(dados, 's', (x) => x && typeof x === 'object' && !Array.isArray(x))?.ts),
+    secoesApuradas: num(achar(dados, 's', (x) => x && typeof x === 'object' && !Array.isArray(x))?.st),
     // Eleitores das seções ainda não totalizadas: teto de votos que ainda podem entrar.
     naoApurados: num(achar(eleitorado || dados, 'esnt')),
     abstencao: num(achar(eleitorado || dados, 'a')),

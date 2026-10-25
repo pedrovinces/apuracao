@@ -21,6 +21,14 @@ const NOME_UF = {
 };
 // Votos de brasileiros no exterior: no TSE a "UF" é zz e os "municípios" são cidades.
 const EXT = 'zz';
+// Regiões do IBGE. O TSE não publica arquivo por região: o resultado é a soma dos estados.
+const REGIOES = {
+  n: { nome: 'Norte', ufs: ['ac', 'am', 'ap', 'pa', 'ro', 'rr', 'to'] },
+  ne: { nome: 'Nordeste', ufs: ['al', 'ba', 'ce', 'ma', 'pb', 'pe', 'pi', 'rn', 'se'] },
+  co: { nome: 'Centro-Oeste', ufs: ['df', 'go', 'ms', 'mt'] },
+  se: { nome: 'Sudeste', ufs: ['es', 'mg', 'rj', 'sp'] },
+  s: { nome: 'Sul', ufs: ['pr', 'rs', 'sc'] },
+};
 const DO_UF = { ac: 'do', al: 'de', am: 'do', ap: 'do', ba: 'da', ce: 'do', df: 'do', es: 'do', go: 'de', ma: 'do', mg: 'de', ms: 'de', mt: 'de', pa: 'do', pb: 'da', pe: 'de', pi: 'do', pr: 'do', rj: 'do', rn: 'do', ro: 'de', rr: 'de', rs: 'do', sc: 'de', se: 'de', sp: 'de', to: 'do', zz: 'no' };
 // A cor segue o número do candidato, nunca a posição na lista: se a liderança mudar,
 // o vermelho continua sendo do 13 e o azul do 22.
@@ -52,6 +60,7 @@ const est = {
   munCfg: [], tsePorIbge: new Map(), semLigacao: [],
   nivel: params.get('nivel') === 'municipios' ? 'municipios' : 'estados',
   uf: [...UFS, EXT].includes((params.get('uf') || '').toLowerCase()) ? params.get('uf').toLowerCase() : null,
+  regiao: REGIOES[(params.get('regiao') || '').toLowerCase()] ? params.get('regiao').toLowerCase() : null,
   ultimaLeitura: null, ultimaConferencia: null, assinaturaBr: null, ultimoCompleto: 0, ultimaCargaMun: 0,
   statusBr: null, limiteTabela: 60,
 };
@@ -84,6 +93,27 @@ function cor(r) {
 
 // ---------- dados por feição do mapa ----------
 const resultadoUf = (uf) => est.ufs[uf.toLowerCase()]?.resultado || null;
+// Soma os arquivos estaduais da região no mesmo formato de um resultado do TSE.
+// Seções apuradas = totalizadas / total das seções dos estados da região.
+function resultadoRegiao(id) {
+  const rs = REGIOES[id].ufs.map(resultadoUf).filter(Boolean);
+  if (!rs.length) return null;
+  // Estados sem arquivo lido (recusa do TSE no pico): a soma fica parcial e isso é avisado.
+  const faltando = REGIOES[id].ufs.filter((u) => !resultadoUf(u)).map((u) => u.toUpperCase());
+  const soma = (f) => rs.reduce((t, r) => t + (f(r) || 0), 0);
+  const votos = {};
+  for (const r of rs) for (const c of r.cand) votos[c.n] = (votos[c.n] || 0) + c.votos;
+  const totalCand = Object.values(votos).reduce((a, b) => a + b, 0);
+  const cand = Object.entries(votos).map(([n, v]) => ({ n, nome: rs[0].cand.find((c) => c.n === n)?.nome || n, votos: v, pct: totalCand ? (100 * v) / totalCand : 0, eleito: false }))
+    .sort((a, b) => b.votos - a.votos || Number(a.n) - Number(b.n));
+  const ts = soma((r) => r.secoesTotal), st = soma((r) => r.secoesApuradas);
+  const comparec = soma((r) => (r.eleitores != null && r.abstencao != null ? r.eleitores - r.abstencao : 0));
+  return {
+    cand, totalCand, pst: ts ? (100 * st) / ts : 0, secoesTotal: ts, secoesApuradas: st,
+    eleitores: soma((r) => r.eleitores), abstencao: soma((r) => r.abstencao),
+    brancos: soma((r) => r.brancos), nulos: soma((r) => r.nulos), comparecimento: comparec, regiao: true, faltando,
+  };
+}
 function resultadoMun(f) {
   const tse = est.tsePorIbge.get(f.properties.ibge);
   return tse ? est.mun.get(tse)?.resultado || null : null;
@@ -129,23 +159,53 @@ function aplicarVista() {
   $('#mapa').hidden = exterior; $('#legenda').hidden = exterior; $('#dica-uso').hidden = exterior;
   $('#exterior-resumo').hidden = !exterior;
   if (exterior) $('#zoom-reset').hidden = true;
-  else mapa.mostrar({ modo: est.nivel, uf: est.uf ? est.uf.toUpperCase() : null });
-  $('#voltar').hidden = !est.uf;
-  $('#titulo-mapa').textContent = exterior ? 'Votos no exterior' : est.uf ? NOME_UF[est.uf] : munis ? 'Brasil por município' : 'Brasil por estado';
+  else mapa.mostrar({ modo: est.nivel, uf: est.uf ? est.uf.toUpperCase() : null, regiao: !est.uf && est.regiao ? REGIOES[est.regiao].ufs.map((u) => u.toUpperCase()) : null });
+  $('#voltar').hidden = !est.uf && !est.regiao;
+  $('#voltar').textContent = est.uf && est.regiao ? `← ${REGIOES[est.regiao].nome}` : '← Brasil';
+  const reg = !est.uf && est.regiao ? REGIOES[est.regiao] : null;
+  $('#regiao-resumo').hidden = !reg;
+  $('#titulo-mapa').textContent = exterior ? 'Votos no exterior' : est.uf ? NOME_UF[est.uf] : reg ? `Região ${reg.nome}` : munis ? 'Brasil por município' : 'Brasil por estado';
   $('#dica-uso').textContent = est.uf
     ? 'Toque num município para ver os números. Use dois dedos para ampliar.'
     : munis ? 'Toque num município para ver os números. Use dois dedos para ampliar.' : 'Toque num estado para ver os municípios. Use dois dedos para ampliar.';
   document.querySelectorAll('.segmentado button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.nivel === est.nivel)));
-  $('#uf').value = est.uf || '';
+  $('#uf').value = est.uf || (est.regiao ? 'reg:' + est.regiao : '');
   // O endereço reflete a escolha, para compartilhar o link já no recorte certo.
   const p = new URLSearchParams(location.search);
   est.uf ? p.set('uf', est.uf.toUpperCase()) : p.delete('uf');
+  !est.uf && est.regiao ? p.set('regiao', est.regiao.toUpperCase()) : p.delete('regiao');
   est.nivel === 'municipios' ? p.set('nivel', 'municipios') : p.delete('nivel');
   p.delete('_v'); // marca usada só para furar o cache do HTML na troca de versão
   history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : '') + location.hash);
   pintarMapa();
   desenharTabela();
   desenharExterior();
+  desenharRegioes();
+}
+
+// Resumo da região escolhida (no lugar de destaque do mapa) e tabela das cinco regiões
+// na visão do Brasil. Mesmas regras de contagem e brilho das outras tabelas.
+function desenharRegioes() {
+  const reg = !est.uf && est.regiao ? est.regiao : null;
+  if (reg) {
+    const r = resultadoRegiao(reg);
+    const sec = r && r.secoesTotal ? `${fmtInt.format(r.secoesApuradas)} de ${fmtInt.format(r.secoesTotal)} seções` : '';
+    const falta = r?.faltando?.length ? ` · faltam dados de ${r.faltando.join(', ')} (soma parcial)` : '';
+    $('#regiao-resumo').innerHTML = fichaHtml(`Região ${REGIOES[reg].nome}`, `${REGIOES[reg].ufs.length} estados${sec ? ' · ' + sec : ''}${falta}`, r);
+  }
+  const cartao = $('#cartao-regioes');
+  cartao.hidden = !!est.uf || !!est.regiao;
+  if (cartao.hidden) return;
+  const linhas = Object.entries(REGIOES).map(([id, g]) => {
+    const r = resultadoRegiao(id);
+    return { chave: 'reg-' + id, nome: g.nome + (r?.faltando?.length ? '*' : ''), regiao: id, r };
+  });
+  linhas.sort((a, b) => (b.r?.totalCand || 0) - (a.r?.totalCand || 0));
+  $('#tabela-regioes thead').innerHTML = cabecalho('Região');
+  $('#tabela-regioes tbody').innerHTML = linhasHtml('regioes', linhas);
+}
+function cabecalho(local) {
+  return `<tr><th class="col-local">${local}</th><th class="col-apur">Apur.</th>${ORDEM.map((n) => `<th class="col-c">${CAND[n].nome.split(' ')[0]}</th>`).join('')}<th class="col-dif">Dif.</th></tr>`;
 }
 
 function pintarMapa() {
@@ -435,11 +495,14 @@ function aviso(msg, erro = false) {
 // ---------- tabela ----------
 function desenharTabela() {
   const thead = $('#tabela thead'), tbody = $('#tabela tbody');
-  thead.innerHTML = `<tr><th class="col-local">${est.uf === EXT ? 'Cidade' : est.uf ? 'Município' : 'Estado'}</th><th class="col-apur">Apur.</th>${ORDEM.map((n) => `<th class="col-c">${CAND[n].nome.split(' ')[0]}</th>`).join('')}<th class="col-dif">Dif.</th></tr>`;
+  thead.innerHTML = cabecalho(est.uf === EXT ? 'Cidade' : est.uf ? 'Município' : 'Estado');
   let linhas;
   if (est.uf) {
     $('#titulo-tabela').textContent = est.uf === EXT ? 'Cidades no exterior' : `Municípios ${DO_UF[est.uf]} ${NOME_UF[est.uf]}`;
     linhas = est.munCfg.filter((m) => m.uf === est.uf).map((m) => ({ chave: m.cd, nome: tituloCaixa(m.nome), r: est.mun.get(m.cd)?.resultado || null }));
+  } else if (est.regiao) {
+    $('#titulo-tabela').textContent = `Estados da região ${REGIOES[est.regiao].nome}`;
+    linhas = REGIOES[est.regiao].ufs.map((uf) => ({ chave: uf, nome: NOME_UF[uf], uf, r: resultadoUf(uf) }));
   } else {
     $('#titulo-tabela').textContent = 'Por estado';
     linhas = [...UFS, EXT].map((uf) => ({ chave: uf, nome: NOME_UF[uf], uf, r: resultadoUf(uf) }));
@@ -457,8 +520,14 @@ function desenharTabela() {
       : `${est.uf === EXT ? 'Todas as' : 'Todos os'} ${fmtInt.format(total)} ${nome} com apuração.`;
   } else resumo.hidden = true;
   if (est.uf) linhas = linhas.slice(0, est.limiteTabela);
-  const tabela = est.uf || 'br';
-  tbody.innerHTML = linhas.map(({ chave, nome, uf, r }) => {
+  tbody.innerHTML = linhasHtml(est.uf || 'br', linhas);
+  $('#mais').hidden = !est.uf || total <= est.limiteTabela;
+  $('#mais').textContent = `Mostrar todos (${total})`;
+}
+
+// Linhas de uma tabela de resultados (estados, municípios, cidades ou regiões).
+function linhasHtml(tabela, linhas) {
+  return linhas.map(({ chave, nome, uf, regiao, r }) => {
     const ok = publicado(r);
     const lider = ok && r.cand.length >= 2 && r.cand[0].votos > r.cand[1].votos ? r.cand[0].n : null;
     // Cada célula compara o texto exibido com o anterior; só o que mudou na tela brilha.
@@ -483,10 +552,8 @@ function desenharTabela() {
     const celDif = td('dif' + lider, lider ? 'dif' + lider : 'sem', dif != null && lider ? dif : null, 'comp');
     // A linha inteira ganha uma faixa lateral enquanto alguma célula dela brilha.
     const bl = attrsBrilho(maisRecente, 'linha-mudou');
-    return `<tr class="${bl.cls.trim()}"${bl.estilo} data-chave="${chave}"${uf ? ` data-uf="${uf}"` : ''}><td title="${escapar(nome)}">${escapar(nome)}</td>${apur}${cels}${celDif}</tr>`;
+    return `<tr class="${bl.cls.trim()}"${bl.estilo} data-chave="${chave}"${uf ? ` data-uf="${uf}"` : ''}${regiao ? ` data-regiao="${regiao}"` : ''}><td title="${escapar(nome)}">${escapar(nome)}</td>${apur}${cels}${celDif}</tr>`;
   }).join('');
-  $('#mais').hidden = !est.uf || total <= est.limiteTabela;
-  $('#mais').textContent = `Mostrar todos (${total})`;
 }
 
 // ---------- leituras ----------
@@ -495,6 +562,15 @@ async function atualizarEstados(brPronto = null) {
   const { ciclo, cd } = est.eleicao;
   const pedidos = [['br', brPronto ? Promise.resolve(brPronto) : lerResultado(ciclo, cd, 'br')], ...[...UFS, EXT].map((uf) => [uf, lerResultado(ciclo, cd, uf)])];
   const res = await Promise.allSettled(pedidos.map((p) => p[1]));
+  // Estados recusados no pico (429) e ainda sem nenhum dado: mais uma tentativa, um por vez.
+  for (let i = 1; i < pedidos.length; i++) {
+    const uf = pedidos[i][0];
+    if (res[i].status === 'fulfilled' && res[i].value.resultado) continue;
+    if (est.ufs[uf]) continue; // já há um dado anterior na tela
+    await new Promise((r) => setTimeout(r, 300));
+    const novo = await lerResultado(ciclo, cd, uf);
+    res[i] = { status: 'fulfilled', value: novo };
+  }
   res.forEach((s, i) => {
     const chave = pedidos[i][0];
     if (s.status !== 'fulfilled') return;
@@ -512,7 +588,7 @@ async function atualizarEstados(brPronto = null) {
   if (est.statusBr === 404 || (r && !publicado(r))) aviso('');
   else if (!r) aviso(`Não foi possível ler o resultado nacional (situação: ${est.statusBr}). Nova tentativa em 30 s.`, true);
   else aviso('');
-  desenharPlacar(); pintarMapa(); desenharTabela(); desenharExterior(); desenharContagem(); atualizarDiag();
+  desenharPlacar(); pintarMapa(); desenharTabela(); desenharExterior(); desenharRegioes(); desenharContagem(); atualizarDiag();
 }
 
 // Identifica uma versão do arquivo nacional: idg é o identificador de geração do TSE.
@@ -541,7 +617,9 @@ const carga = { geracao: 0, ativa: false, timer: null };
 async function cicloMunicipios() {
   clearTimeout(carga.timer);
   const geracao = ++carga.geracao;
-  const alvo = est.uf ? est.munCfg.filter((m) => m.uf === est.uf) : est.nivel === 'municipios' ? est.munCfg.filter((m) => m.uf !== EXT) : [];
+  // Região na visão de municípios: apenas os municípios dos estados dela.
+  const naRegiao = (m) => !est.regiao || REGIOES[est.regiao].ufs.includes(m.uf);
+  const alvo = est.uf ? est.munCfg.filter((m) => m.uf === est.uf) : est.nivel === 'municipios' ? est.munCfg.filter((m) => m.uf !== EXT && naRegiao(m)) : [];
   // Antes da divulgação não há o que ler nos municípios; poupa a rede de quem já abriu a página.
   if (!alvo.length || !publicado(est.br?.resultado)) {
     $('#progresso').hidden = true;
@@ -725,8 +803,19 @@ async function conferirVersao() {
 }
 setInterval(() => { if (!document.hidden) conferirVersao(); }, T_VERSAO);
 
+function escolherRegiao(id) {
+  evento('escolheu-regiao', { regiao: REGIOES[id].nome });
+  est.regiao = id; est.uf = null;
+  fecharPainel();
+  aplicarVista();
+  if (est.eleicao) cicloMunicipios();
+  $('.cartao-mapa').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 function escolherUf(uf) {
   if (uf) evento(uf === EXT ? 'abriu-exterior' : 'escolheu-estado', { uf: uf.toUpperCase() });
+  // Estado escolhido dentro de uma região: o "voltar" leva de volta à região.
+  if (!uf && est.uf && est.regiao && REGIOES[est.regiao].ufs.includes(est.uf)) { est.uf = null; est.limiteTabela = 60; fecharPainel(); aplicarVista(); if (est.eleicao) cicloMunicipios(); return; }
+  if (!uf || uf === EXT || !(est.regiao && REGIOES[est.regiao].ufs.includes(uf))) est.regiao = null;
   est.uf = uf || null;
   est.limiteTabela = 60;
   fecharPainel();
@@ -755,9 +844,14 @@ function atualizarDiag() {
 // ---------- início ----------
 function ligarControles() {
   const sel = $('#uf');
-  sel.insertAdjacentHTML('beforeend', `<option value="${EXT}">Exterior</option>`);
-  sel.insertAdjacentHTML('beforeend', UFS.slice().sort((a, b) => NOME_UF[a].localeCompare(NOME_UF[b], 'pt-BR')).map((uf) => `<option value="${uf}">${NOME_UF[uf]}</option>`).join(''));
-  sel.onchange = () => escolherUf(sel.value);
+  sel.insertAdjacentHTML('beforeend', `<option value="${EXT}">Exterior</option>`
+    + `<optgroup label="Regiões">${Object.entries(REGIOES).map(([id, g]) => `<option value="reg:${id}">${g.nome}</option>`).join('')}</optgroup>`
+    + `<optgroup label="Estados">${UFS.slice().sort((a, b) => NOME_UF[a].localeCompare(NOME_UF[b], 'pt-BR')).map((uf) => `<option value="${uf}">${NOME_UF[uf]}</option>`).join('')}</optgroup>`);
+  sel.onchange = () => (sel.value.startsWith('reg:') ? escolherRegiao(sel.value.slice(4)) : escolherUf(sel.value));
+  $('#tabela-regioes tbody').addEventListener('click', (ev) => {
+    const tr = ev.target.closest('tr[data-regiao]');
+    if (tr) escolherRegiao(tr.dataset.regiao);
+  });
   document.querySelectorAll('.segmentado button').forEach((b) => {
     b.onclick = () => { est.nivel = b.dataset.nivel; evento('nivel', { nivel: est.nivel }); aplicarVista(); if (est.eleicao) cicloMunicipios(); };
   });
