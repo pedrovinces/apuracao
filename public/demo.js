@@ -25,13 +25,16 @@ export function criarDemo(municipiosGeo) {
   const params = new URLSearchParams(location.search);
   const p0 = Math.min(100, Math.max(0, Number(params.get('p')) || 0)) / 100;
   const t0 = Date.now() - p0 * DURACAO;
+  // ?vence=22 inverte as preferências fictícias, para testar a vitória do outro lado.
+  const inverte = params.get('vence') === '22';
 
   // Perfil fixo de cada município, criado a partir do mapa (o nome vai em caixa alta, como no TSE).
   const munis = municipiosGeo.map((f, i) => {
     const { ibge, nome, uf } = f.properties;
     const u = uf.toLowerCase();
     const eleitores = Math.round(1800 * Math.exp(4.6 * Math.pow(h(ibge, 1), 2.2)));
-    const share13 = Math.min(0.9, Math.max(0.1, 0.5 + REGIAO[u] + (h(ibge, 2) - 0.5) * 0.45));
+    const base13 = Math.min(0.9, Math.max(0.1, 0.5 + REGIAO[u] + (h(ibge, 2) - 0.5) * 0.45));
+    const share13 = inverte ? 1 - base13 : base13;
     return {
       uf: u, cd: String(10000 + i).padStart(5, '0'),
       // 1 em cada 25 sem cdi, para exercitar a ligação por nome + UF

@@ -381,13 +381,25 @@ function desenharDefinicao(r, ok) {
   const matematico = !eleito && r.naoApurados != null && r.pst < 100 && vantagem > r.naoApurados;
   if (!eleito && !matematico) { el.hidden = true; return; }
   const c = eleito || a;
+  if (c.n === '22') festejar(!!eleito);
   el.hidden = false;
   el.className = 'definicao ' + (eleito ? 'oficial' : 'calculo');
   el.style.setProperty('--cor', CAND[c.n]?.cor || '#555');
   el.innerHTML = eleito
     ? `<b>${escapar(nomeCand(c))} está eleito presidente</b><span>confirmado pelo TSE</span>`
     : `<b>Matematicamente definido: ${escapar(nomeCand(c))}</b><span class="longo">vantagem de ${fmtInt.format(vantagem)} votos é maior que os ${fmtInt.format(r.naoApurados)} eleitores das seções que faltam · aguardando o TSE</span><span class="curto">vantagem já supera todos os eleitores que faltam · aguardando o TSE</span>`;
+  if (c.n === '22') el.insertAdjacentHTML('beforeend', '<button type="button" class="rever-festa">🎆 Rever</button>');
   el.title = `Vantagem de ${fmtInt.format(vantagem)} votos; eleitores nas seções não apuradas: ${fmtInt.format(r.naoApurados ?? 0)}.`;
+}
+
+// Comemoração da vitória do 22: uma vez por estado (definido / confirmado) em cada aparelho.
+// No demo a lembrança dura só a aba, para dar para testar de novo.
+function festejar(oficial, forcar = false) {
+  const chave = `festa|${est.eleicao?.cd}|${oficial ? 'oficial' : 'calculo'}`;
+  const guarda = DEMO ? sessionStorage : localStorage;
+  try { if (!forcar && guarda.getItem(chave)) return; guarda.setItem(chave, '1'); } catch { /* sem armazenamento: festeja mesmo assim */ }
+  import('./festa.js?v=dev').then((m) => m.comemorar({ oficial, versao: VERSAO }));
+  evento('festa', { tipo: oficial ? 'oficial' : 'calculo' });
 }
 
 // Contagem regressiva até o fechamento das urnas; depois, "aguardando o TSE"; some quando
@@ -687,6 +699,9 @@ function ligarControles() {
   $('#voltar').onclick = () => escolherUf(null);
   $('#exterior-cartao').onclick = () => escolherUf(est.uf === EXT ? null : EXT);
   $('#painel-fechar').onclick = fecharPainel;
+  $('#definicao').addEventListener('click', (ev) => {
+    if (ev.target.closest('.rever-festa')) festejar($('#definicao').classList.contains('oficial'), true);
+  });
   $('#painel').addEventListener('click', (ev) => {
     const b = ev.target.closest('[data-uf]');
     if (b) escolherUf(b.dataset.uf);
