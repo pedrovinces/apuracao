@@ -802,6 +802,17 @@ function atualizarIdade() {
   const el = $('#aovivo');
   if (!est.ultimaConferencia || !est.eleicao) return;
   el.hidden = false;
+  // 100% das seções: sai o "ao vivo" (ponto pulsando, anel, próxima leitura) e entra o
+  // aviso de apuração concluída. O painel continua conferindo, caso o TSE corrija algo.
+  const r = est.br?.resultado;
+  const concluida = publicado(r) && r.pst >= 100;
+  el.classList.toggle('final', concluida);
+  if (concluida) {
+    const t = horaTse(r);
+    $('#aovivo-txt').innerHTML = `<b>Apuração concluída</b> · 100% das seções${t ? ` · dados do TSE das ${hhmm(t)}` : ''}`;
+    $('#proxima').textContent = '';
+    return;
+  }
   const s = Math.max(0, Math.round((Date.now() - est.ultimaConferencia) / 1000));
   const lendo = el.classList.contains('lendo');
   const parado = document.hidden;

@@ -279,6 +279,9 @@ td.sem { color: var(--suave); }
   animation: encher 5s linear forwards; /* igual a T_BR em app.js */
 }
 @keyframes encher { from { --p: 0; } to { --p: 100; } }
+.aovivo.final .pulso, .aovivo.final .anel { display: none; }
+.aovivo.final::before { content: "✓"; font-weight: 800; color: var(--texto); }
+.aovivo.final b { color: var(--texto); }
 #proxima { flex: none; font-size: 12px; min-width: 9ch; }
 @media (prefers-reduced-motion: reduce) { .pulso::after, .relogio i, .pontos i { animation: none; } .pontos i { opacity: 1; } }
 
