@@ -53,7 +53,7 @@ function ind(a) {
 }
 // Seção: converte as listas compactas em objetos {t1, t2} com as mesmas chaves dos agregados.
 function secaoAgg(l) {
-  const t = (x) => (x ? { secoes: 1, apt: x[0], comp: x[1], abst: x[0] - x[1], 13: x[2], 22: x[3], out: x[4], br: x[5], nu: x[6], local: x[7], agr: x[8] } : null);
+  const t = (x) => (x ? { secoes: 1, apt: x[0], comp: x[1], abst: x[0] - x[1], 13: x[2], 22: x[3], out: x[4], br: x[5], nu: x[6], local: x[7], agr: x[8], sb: x[9] } : null);
   return { zona: l[0], secao: l[1], t1: t(l[2]), t2: t(l[3]), ab: l[4], en: l[5], pos17: l[6], ultimo: l[7], parcial: !!l[8] };
 }
 function somaAgg(lista) {
@@ -67,7 +67,7 @@ const aggUf = (uf) => R.ufs[uf];
 // ---------- estado da navegação (refletido no endereço) ----------
 const P = new URLSearchParams(location.search);
 const est = {
-  aba: ['turnos', 'horario', 'cidades', 'simulador'].includes(P.get('aba')) ? P.get('aba') : 'turnos',
+  aba: ['turnos', 'horario', 'cidades', 'biometria', 'vizinhanca', 'ref2022', 'simulador'].includes(P.get('aba')) ? P.get('aba') : 'turnos',
   regiao: REGIOES[P.get('regiao')] ? P.get('regiao') : null,
   uf: NOME_UF[(P.get('uf') || '').toUpperCase()] ? P.get('uf').toUpperCase() : null,
   mun: P.get('mun') ? Number(P.get('mun')) : null,
@@ -313,8 +313,21 @@ async function detalheSecao() {
     <div><dt>Último voto</dt><dd>${s.ultimo == null ? 'não analisado' : hora(s.ultimo)}</dd></div><div><dt>Votos depois das 17h</dt><dd>${s.pos17 == null ? 'não analisado' : fmt.format(s.pos17)}</dd></div></dl>
     ${s.parcial ? '<p class="aviso">O log desta urna registra menos votos do que o boletim (provável troca de urna ou votação em cédula). A contagem depois das 17h é um piso: pode haver mais.</p>' : ''}
     <p class="nota-pequena">${s.pos17 == null ? 'O log desta seção não foi analisado: analisamos todas as seções que fecharam depois das 17:15 e uma amostra das que fecharam entre 17:00 e 17:15.' : `Contagem feita no log da urna: ${fmt.format(s.pos17)} de ${fmt.format(s.t2?.comp || 0)} eleitores votaram depois das 17:00. O log não diz em quem votaram (voto secreto).`}</p></section>`;
+  const taxa = (t) => (t && t.sb != null && t.comp ? pct((100 * t.sb) / t.comp) : '–');
+  const bio = `<section class="cartao"><h2>Biometria</h2><dl class="pares">
+      <div><dt>Liberados sem digital, 1º turno</dt><dd>${s.t1?.sb ?? '–'} <small>${taxa(s.t1)}</small></dd></div>
+      <div><dt>Liberados sem digital, 2º turno</dt><dd>${s.t2?.sb ?? '–'} <small>${taxa(s.t2)}</small></dd></div></dl>
+      <p class="nota-pequena">Eleitores com digital cadastrada que votaram sem a digital ser reconhecida, liberados pelo mesário depois de conferir a identidade. Média do país: 6,66% no 1º turno e 6,73% no 2º.</p></section>`;
+  // Vizinhas: outras seções do mesmo local de votação (mesma escola), com eleitorado parecido.
+  const viz = d.secoes.map(secaoAgg).filter((x) => x.zona === est.zona && x.t2 && s.t2 && x.t2.local === s.t2.local);
+  const varL = (x) => { if (!x.t1 || !x.t2) return null; const v1 = x.t1[13] + x.t1[22] + x.t1.out, v2 = x.t2[13] + x.t2[22]; return v1 && v2 ? (100 * x.t2[13]) / v2 - (100 * x.t1[13]) / v1 : null; };
+  const vizinhas = viz.length > 1 ? `<section class="cartao"><h2>Comparação com as vizinhas</h2>
+      <p class="nota-pequena">Seções do mesmo local de votação (nº ${s.t2.local}). Eleitores de uma mesma escola costumam votar de forma parecida; uma urna que destoasse muito das vizinhas chamaria atenção. "Variação" é quanto o percentual de Lula mudou do 1º para o 2º turno.</p>
+      <div class="tabela-rolagem"><table class="tabela-secoes"><thead><tr><th>Seção</th><th>Lula 1º → 2º</th><th>Variação</th></tr></thead><tbody>
+      ${viz.map((x) => { const v1 = x.t1 ? x.t1[13] + x.t1[22] + x.t1.out : 0, v2 = x.t2[13] + x.t2[22]; return `<tr class="${x.secao === est.secao ? 'atual' : ''}" data-ir='${JSON.stringify({ uf: est.uf, mun: est.mun, zona: x.zona, secao: x.secao })}'><td>${x.secao}${x.secao === est.secao ? ' (esta)' : ''}</td><td><span class="de">${v1 ? pct((100 * x.t1[13]) / v1) : '–'} →</span><b class="t13">${v2 ? pct((100 * x.t2[13]) / v2) : '–'}</b></td><td>${pp(varL(x))}</td></tr>`; }).join('')}
+      </tbody></table></div></section>` : '';
   $('#conteudo').innerHTML = (avisos.length ? `<div class="aviso">${avisos.map(esc).join('<br>')}</div>` : '')
-    + cartaoTurnos(s, `${est.munNome} · zona ${est.zona} · seção ${est.secao}`) + cartaoTransicao(s) + horario
+    + cartaoTurnos(s, `${est.munNome} · zona ${est.zona} · seção ${est.secao}`) + cartaoTransicao(s) + horario + bio + vizinhas
     + `<section class="cartao"><h2>Conferir no TSE</h2><p class="nota-pequena">Arquivos oficiais desta seção (boletim de urna, log e registro digital do voto), para qualquer pessoa verificar:</p>
       <ul class="links"><li><a href="${aux(3220)}" target="_blank" rel="noopener">1º turno: arquivos da urna</a></li><li><a href="${aux(3221)}" target="_blank" rel="noopener">2º turno: arquivos da urna</a></li></ul></section>`;
 }
@@ -414,6 +427,14 @@ function graficoResultado() {
 // ---------- aba: cidades (filtros e extremos) ----------
 let cidades = null, extremas = null;
 const fc = { venc: 'todos', virada: 'todas', fCaiu: false, lCaiu: false, dfMax: 40, dlMin: -40, minEl: 0, ordem: 'queda_fv', limite: 150, eixo: 'outros' };
+// Filtros pelo endereço, para links diretos (ex.: ?aba=cidades&fcaiu=1&ordem=queda_fp).
+if (P.get('venc')) fc.venc = P.get('venc');
+if (P.get('virada')) fc.virada = P.get('virada');
+if (P.get('fcaiu') === '1') fc.fCaiu = true;
+if (P.get('lcaiu') === '1') fc.lCaiu = true;
+if (P.get('ordem')) fc.ordem = P.get('ordem');
+if (P.get('dfmax')) fc.dfMax = Number(P.get('dfmax'));
+if (P.get('eixo')) fc.eixo = P.get('eixo');
 function prepCidades(d) {
   return d.cidades.map(([uf, cd, nome, ibge, apt1, comp1, l1, f1, o1, bn1, apt2, comp2, l2, f2, bn2]) => {
     const v1 = l1 + f1 + o1, v2 = l2 + f2;
@@ -535,6 +556,131 @@ async function secoesExtremas() {
   $('#ext-tipo').onchange = (e) => { est.extTipo = e.target.value; secoesExtremas(); };
 }
 
+// ---------- abas: biometria, vizinhança e 2022 × 2026 ----------
+let E = null; // estudos.json
+const lerEstudos = async () => (E ||= await json('dados/estudos.json?v=dev'));
+const pctTxt = (v, c = 2) => pct(v, c);
+
+async function abaBiometria() {
+  await lerEstudos();
+  const a = est.uf ? aggUf(est.uf) : est.regiao ? aggRegiao(est.regiao) : R.br;
+  const nome = est.uf ? NOME_UF[est.uf] : est.regiao ? `Região ${est.regiao}` : 'Brasil';
+  const tx = (t) => (t?.comp ? (100 * (t.sb || 0)) / t.comp : null);
+  const b22 = E['2022'].bio;
+  const ufs = Object.keys(R.ufs).filter((u) => u !== 'ZZ' && (!est.regiao || (REGIOES[est.regiao] || []).includes(u)));
+  const horario = Object.entries(E['2026'].horario).filter(([, h]) => h.comp > 0);
+  $('#conteudo').innerHTML = `<section class="cartao"><h2>${esc(nome)}: eleitores liberados sem a digital</h2>
+      <div class="numeros-grandes">
+        <div><b>${fmt.format(a.t1?.sb || 0)}</b><span>no 1º turno · ${pctTxt(tx(a.t1))} de quem votou</span></div>
+        <div><b>${fmt.format(a.t2?.sb || 0)}</b><span>no 2º turno · ${pctTxt(tx(a.t2))} de quem votou</span></div>
+        ${!est.uf && !est.regiao ? `<div><b>${pctTxt(b22.t2.taxa)}</b><span>no 2º turno de 2022 (referência)</span></div><div><b>${E['2026'].bio_corr.toLocaleString('pt-BR')}</b><span>correlação, seção a seção, entre a variação desta taxa e a variação de Lula (0 = nenhuma relação)</span></div>` : ''}
+      </div>
+      <p class="nota-pequena">O boletim de urna informa quantos eleitores que <b>têm digital cadastrada</b> votaram <b>sem a digital ser reconhecida</b> (dedo machucado, gasto, leitor sujo). Nesses casos o mesário confere a identidade do eleitor e libera a votação. Esse número diz quantas pessoas votaram assim, não em quem votaram.</p></section>
+    ${!est.uf && !est.regiao ? `<section class="cartao"><h2>A taxa sem digital mudou o resultado?</h2>
+      <p class="nota-pequena">As seções foram divididas em 10 grupos iguais, da que mais <b>reduziu</b> a taxa sem digital do 1º para o 2º turno (grupo 1) à que mais <b>aumentou</b> (grupo 10). Se a liberação sem digital tivesse sido usada para inflar votos de um candidato, os grupos da direita mostrariam ganho maior dele. As barras mostram quanto Lula cresceu em cada grupo.</p>
+      <div id="g-bio" class="grafico"></div></section>` : ''}
+    <section class="cartao"><h2>Por estado</h2><div class="tabela-rolagem"><table class="tabela-locais"><thead><tr><th>Estado</th><th>1º turno</th><th>2º turno</th><th>Variação</th></tr></thead><tbody>
+      ${ufs.map((u) => { const g = aggUf(u), x1 = tx(g.t1), x2 = tx(g.t2); return `<tr data-ir='${JSON.stringify({ uf: u })}'><td>${NOME_UF[u]}</td><td>${pctTxt(x1)}</td><td>${pctTxt(x2)}</td><td>${pp(x2 - x1)}</td></tr>`; }).join('')}
+    </tbody></table></div></section>
+    ${!est.uf && !est.regiao ? `<section class="cartao"><h2>Por horário de encerramento da urna</h2><p class="nota-pequena">Taxa sem digital no 2º turno conforme o horário em que a urna fechou (Brasília). Faixas com menos de 100 seções têm números instáveis.</p>
+      <div class="tabela-rolagem"><table class="tabela-locais"><thead><tr><th>Fechou</th><th>Seções</th><th>Sem digital</th></tr></thead><tbody>
+      ${horario.map(([m, h]) => `<tr><td>${hora(+m)}</td><td>${fmt.format(h.secoes)}</td><td>${pctTxt((100 * h.sb) / h.comp)}</td></tr>`).join('')}</tbody></table></div></section>` : ''}`;
+  if (!est.uf && !est.regiao) graficoDecis();
+}
+function graficoDecis() {
+  const d = E['2026'].bio_decis, el = $('#g-bio'); if (!el) return;
+  const W = el.clientWidth || 340, H = 220, m = { t: 14, r: 8, b: 40, l: 40 };
+  const x = d3.scaleBand().domain(d.map((_, i) => i + 1)).range([m.l, W - m.r]).padding(0.2);
+  const y = d3.scaleLinear().domain([0, d3.max(d, (v) => v.d_lula) * 1.15]).range([H - m.b, m.t]);
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('class', 'svg-grafico');
+  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(4).tickFormat((v) => '+' + v + ' p.p.')).call((s) => s.selectAll('text').attr('font-size', 9));
+  svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x)).call((s) => s.selectAll('text').attr('font-size', 10));
+  svg.append('text').attr('x', (W + m.l) / 2).attr('y', H - 6).attr('text-anchor', 'middle').attr('font-size', 10).attr('fill', 'currentColor').text('← reduziu a taxa sem digital · aumentou →');
+  svg.append('g').selectAll('rect').data(d).join('rect').attr('x', (_, i) => x(i + 1)).attr('width', x.bandwidth()).attr('y', (v) => y(v.d_lula)).attr('height', (v) => y(0) - y(v.d_lula)).attr('fill', COR[13])
+    .append('title').text((v, i) => `Grupo ${i + 1}: taxa variou ${pp(v.d_taxa)}; Lula cresceu ${pp(v.d_lula)}`);
+  svg.append('g').selectAll('text.v').data(d).join('text').attr('x', (_, i) => x(i + 1) + x.bandwidth() / 2).attr('y', (v) => y(v.d_lula) - 3).attr('text-anchor', 'middle').attr('font-size', 9).attr('fill', 'currentColor').text((v) => v.d_lula.toLocaleString('pt-BR', { maximumFractionDigits: 1 }));
+}
+
+async function abaVizinhanca() {
+  await lerEstudos();
+  if (!extremas) extremas = await json('dados/secoes_extremas.json?v=dev'); // nomes dos municípios
+  const v = E['2026'].vizinhanca, v22 = E['2022'].vizinhanca;
+  const linha = (rot, a, b) => `<tr><th>${rot}</th><td>${fmt.format(a)}</td><td>${fmt.format(b)}</td><td>${b ? (a / b).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '–'}</td></tr>`;
+  const lista = (l) => l.slice(0, 25).map(([uf, mun, z, s, local, n, comp, l1, f1, l2, f2, dl, med, adj]) => `<button type="button" class="linha-cidade" data-ir='${JSON.stringify({ uf, mun, zona: z, secao: s })}'>
+      <span class="lc-nome">${esc(titulo(extremas.nomes[`${uf}|${mun}`] || `município ${mun}`))} <small>${uf} · zona ${z} · seção ${s}</small></span>
+      <span class="lc-l">Lula variou ${pp(dl)}; nas ${n - 1} vizinhas, ${pp(med)} (mediana) · desvio ajustado <b>${pp(adj)}</b></span>
+      <span class="lc-l sem">Lula ${fmt.format(l1)} → ${fmt.format(l2)} · Flávio ${fmt.format(f1)} → ${fmt.format(f2)} · ${fmt.format(comp)} votantes</span></button>`).join('');
+  $('#conteudo').innerHTML = `<section class="cartao"><h2>Teste de vizinhança</h2>
+      <p class="nota-pequena">Seções de um mesmo local de votação (a mesma escola) reúnem eleitores parecidos. Comparamos, em cada seção, quanto o percentual de Lula mudou do 1º para o 2º turno com o que aconteceu nas vizinhas. Se urnas tivessem sido adulteradas para favorecer um lado, apareceriam muito mais seções destoando para esse lado do que para o outro. Sem adulteração, os desvios aparecem dos dois lados em quantidades parecidas.</p>
+      <div class="numeros-grandes"><div><b>${fmt.format(v.secoes)}</b><span>seções comparadas (locais com 4 ou mais seções, mesmos eleitores nos dois turnos)</span></div>
+        <div><b>${v.coef_outros.toLocaleString('pt-BR')}</b><span>ajuste: para cada ponto a mais de votos nos outros candidatos no 1º turno, Lula cresce em média esse tanto a mais</span></div></div></section>
+    <section class="cartao"><h2>Quantas seções destoam para cada lado</h2>
+      <p class="nota-pequena">Desvio ajustado pelos votos dos outros candidatos no 1º turno e pela variação do comparecimento (sem esse ajuste, seções com mais votos "livres" pareceriam destoar para o Lula). Logo abaixo da tabela, a conta sem ajuste.</p>
+      <div class="tabela-rolagem"><table class="tabela-exata"><thead><tr><th>Desvio</th><th>Para Lula</th><th>Para Flávio</th><th>Razão</th></tr></thead><tbody>
+        ${['3', '5', '10'].map((t) => linha(`${t} p.p. ou mais`, v.acima[t], v.abaixo[t])).join('')}
+      </tbody></table></div>
+      <p class="nota-pequena">Sem ajuste: 5 p.p. ou mais, ${fmt.format(v.bruto_acima['5'])} para Lula × ${fmt.format(v.bruto_abaixo['5'])} para Flávio. Em 2022, com ajuste: ${fmt.format(v22.acima['5'])} para Lula × ${fmt.format(v22.abaixo['5'])} para Bolsonaro.</p>
+      <p class="nota-pequena">Votos envolvidos nas seções que destoam 5 p.p. ou mais: cerca de ${fmt.format(v.votos_acima5)} na direção de Lula e ${fmt.format(v.votos_abaixo5)} na de Flávio (desvio × votos da seção).</p>
+      <div id="g-viz" class="grafico"></div></section>
+    <section class="cartao"><h2>Seções que mais destoam das vizinhas</h2>
+      <div class="duas-listas"><div><h3 class="t13">Na direção de Lula</h3>${lista(v.top_lula)}</div><div><h3 class="t22">Na direção de Flávio</h3>${lista(v.top_flavio)}</div></div>
+      <p class="nota-pequena">Toque para abrir a seção e ver as vizinhas lado a lado. Desvios grandes costumam ter explicação local (seção nova, mudança de eleitores, seção pequena); a lista serve para conferir caso a caso.</p></section>`;
+  graficoViz(v.hist);
+}
+function graficoViz(h) {
+  const el = $('#g-viz'); if (!el) return;
+  // Chaves negativas não vêm ordenadas num objeto JS: ordena pelo valor numérico.
+  const d = Object.entries(h).map(([k, n]) => [+k, n]).sort((a, b) => a[0] - b[0]);
+  const W = el.clientWidth || 340, H = 200, m = { t: 10, r: 8, b: 30, l: 44 };
+  const x = d3.scaleBand().domain(d.map((v) => v[0])).range([m.l, W - m.r]).padding(0.1);
+  const y = d3.scaleLog().domain([1, d3.max(d, (v) => v[1]) * 1.2]).range([H - m.b, m.t]).clamp(true);
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('class', 'svg-grafico');
+  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(4, '~s')).call((s) => s.selectAll('text').attr('font-size', 9));
+  svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickValues(d.map((v) => v[0]).filter((v) => v % 5 === 0)).tickFormat((v) => (v > 0 ? '+' : '') + v)).call((s) => s.selectAll('text').attr('font-size', 9));
+  svg.append('g').selectAll('rect').data(d).join('rect').attr('x', (v) => x(v[0])).attr('width', x.bandwidth()).attr('y', (v) => y(Math.max(1, v[1]))).attr('height', (v) => y(1) - y(Math.max(1, v[1])))
+    .attr('fill', (v) => (v[0] > 0 ? COR[13] : v[0] < 0 ? COR[22] : 'var(--suave)')).append('title').text((v) => `desvio ${v[0]} p.p.: ${fmt.format(v[1])} seções`);
+}
+
+async function abaRef2022() {
+  await lerEstudos();
+  const a = E['2026'], b = E['2022'];
+  const lulaFaixa = (e, de, ate) => { let l = 0, f = 0; for (const [m, h] of Object.entries(e.horario)) if (+m >= de && +m < ate) { l += h['13']; f += h['22']; } return l + f ? (100 * l) / (l + f) : null; };
+  const linha = (rot, x26, x22, nota = '') => `<tr><th>${rot}${nota ? `<small>${nota}</small>` : ''}</th><td>${x26}</td><td>${x22}</td></tr>`;
+  $('#conteudo').innerHTML = `<section class="cartao"><h2>2026 comparado com 2022</h2>
+      <p class="nota-pequena">Em 2022 o 2º turno também foi entre Lula (13) e um candidato do PL (Jair Bolsonaro, 22), sem prorrogação do horário. Comparar as duas eleições mostra o que é padrão de toda eleição e o que foi diferente em 2026.</p>
+      <div class="tabela-rolagem"><table class="tabela-ref"><thead><tr><th></th><th>2026</th><th>2022</th></tr></thead><tbody>
+        ${linha('Seções com 90% ou mais para Lula (2º turno)', fmt.format(a.extremos.L90_t2), fmt.format(b.extremos.L90_t2))}
+        ${linha('Seções com 90% ou mais para o candidato 22 (2º turno)', fmt.format(a.extremos.F90_t2), fmt.format(b.extremos.F90_t2))}
+        ${linha('Seções com 100% para Lula / para o 22', `${a.extremos.L100_t2} / ${a.extremos.F100_t2 || 0}`, `${b.extremos.L100_t2} / ${b.extremos.F100_t2 || 0}`)}
+        ${linha('Seções com 90% ou mais para Lula (1º turno)', fmt.format(a.extremos.L90_t1), fmt.format(b.extremos.L90_t1))}
+        ${linha('Liberados sem digital, 2º turno', pct(a.bio.t2.taxa, 2), pct(b.bio.t2.taxa, 2))}
+        ${linha('Liberados sem digital, 1º turno', pct(a.bio.t1.taxa, 2), pct(b.bio.t1.taxa, 2), b.bio.t1.comp < 100e6 ? 'em 2022 o campo veio vazio em parte dos boletins do 1º turno' : '')}
+        ${linha('Lula % nas urnas que fecharam até 17:00', pct(lulaFaixa(a, 0, 17 * 60 + 5)), pct(lulaFaixa(b, 0, 17 * 60 + 5)), 'faixa 16:30–17:04')}
+        ${linha('Lula % nas urnas que fecharam 17:05–17:15', pct(lulaFaixa(a, 17 * 60 + 5, 17 * 60 + 15)), pct(lulaFaixa(b, 17 * 60 + 5, 17 * 60 + 15)))}
+        ${linha('Seções destoando 5+ p.p. das vizinhas (Lula × 22)', `${fmt.format(a.vizinhanca.acima['5'])} × ${fmt.format(a.vizinhanca.abaixo['5'])}`, `${fmt.format(b.vizinhanca.acima['5'])} × ${fmt.format(b.vizinhanca.abaixo['5'])}`)}
+        ${linha('Correlação entre variação da taxa sem digital e variação de Lula', a.bio_corr.toLocaleString('pt-BR'), b.bio_corr.toLocaleString('pt-BR'))}
+      </tbody></table></div></section>
+    <section class="cartao"><h2>Resultado por horário de encerramento</h2><p class="nota-pequena">Percentual de Lula conforme o horário em que a urna fechou (Brasília). Em 2022 não houve prorrogação, e o mesmo desenho aparece: urnas que fecham mais tarde, em geral com fila maior, votam mais em Lula.</p><div id="g-ref" class="grafico"></div></section>`;
+  graficoRef(a.horario, b.horario);
+}
+function graficoRef(h26, h22) {
+  const el = $('#g-ref'); if (!el) return;
+  const serie = (h) => Object.entries(h).map(([m, v]) => [+m, v['13'] + v['22'] ? (100 * v['13']) / (v['13'] + v['22']) : null, v.secoes]).filter((v) => v[1] != null && v[2] >= 30 && v[0] <= 19 * 60 + 30);
+  const s26 = serie(h26), s22 = serie(h22);
+  const W = el.clientWidth || 340, H = 220, m = { t: 10, r: 10, b: 28, l: 40 };
+  const x = d3.scaleLinear().domain([16 * 60 + 30, 19 * 60 + 30]).range([m.l, W - m.r]);
+  const y = d3.scaleLinear().domain([35, 70]).range([H - m.b, m.t]).clamp(true);
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('class', 'svg-grafico');
+  svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).tickValues([990, 1020, 1050, 1080, 1110, 1140, 1170]).tickFormat(hora)).call((s) => s.selectAll('text').attr('font-size', 9));
+  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickFormat((v) => v + '%')).call((s) => s.selectAll('text').attr('font-size', 9));
+  const lin = d3.line().x((v) => x(v[0])).y((v) => y(v[1]));
+  svg.append('path').datum(s22).attr('d', lin).attr('fill', 'none').attr('stroke', 'var(--suave)').attr('stroke-width', 2).attr('stroke-dasharray', '4 3');
+  svg.append('path').datum(s26).attr('d', lin).attr('fill', 'none').attr('stroke', COR[13]).attr('stroke-width', 2.5);
+  svg.append('text').attr('x', W - m.r).attr('y', m.t + 10).attr('text-anchor', 'end').attr('font-size', 10).attr('fill', COR[13]).text('2026');
+  svg.append('text').attr('x', W - m.r).attr('y', m.t + 24).attr('text-anchor', 'end').attr('font-size', 10).attr('fill', 'currentColor').text('2022 (tracejado)');
+  svg.append('text').attr('x', m.l + 4).attr('y', H - m.b - 6).attr('font-size', 9).attr('fill', 'currentColor').text('faixas com 30+ seções');
+}
+
 // ---------- aba 3: simulador ----------
 const sim = { limite: 20 * 60, hipotese: 'manter', fora: new Set() };
 function abaSimulador() {
@@ -610,6 +756,9 @@ async function desenhar() {
     if (est.aba === 'turnos') await abaTurnos();
     else if (est.aba === 'horario') await abaHorario();
     else if (est.aba === 'cidades') await abaCidades();
+    else if (est.aba === 'biometria') await abaBiometria();
+    else if (est.aba === 'vizinhanca') await abaVizinhanca();
+    else if (est.aba === 'ref2022') await abaRef2022();
     else abaSimulador();
   } catch (e) {
     $('#conteudo').innerHTML = `<div class="aviso erro">Não foi possível carregar estes dados (${esc(e.message)}).</div>`;

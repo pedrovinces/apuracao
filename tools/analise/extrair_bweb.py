@@ -44,8 +44,11 @@ for url in links:
                         'mun': l['NM_MUNICIPIO'], 'local': int(l['NR_LOCAL_VOTACAO']),
                         'apt': int(l['QT_APTOS']), 'comp': int(l['QT_COMPARECIMENTO']), 'abst': int(l['QT_ABSTENCOES']),
                         'ab': l['DT_ABERTURA'], 'en': l['DT_ENCERRAMENTO'], 'tipo': l['DS_TIPO_URNA'],
-                        'agr': '' if l['DS_SECOES_AGREGADAS'] in ('#NULO#', '-1') else l['DS_SECOES_AGREGADAS'],
+                        'agr': '' if l.get('DS_SECOES_AGREGADAS', '#NULO#') in ('#NULO#', '-1') else l['DS_SECOES_AGREGADAS'],
                         'urna': l['NR_URNA_EFETIVADA'], 'v': {},
+                        # eleitores com digital cadastrada liberados sem reconhecimento biométrico
+                        # (2026: QT_ELEI_BIOM_SEM_HABILITACAO; 2022: QT_ELEITORES_BIOMETRIA_NH)
+                        'sb': next((int(l[c]) for c in ('QT_ELEI_BIOM_SEM_HABILITACAO', 'QT_ELEITORES_BIOMETRIA_NH') if (l.get(c) or '').lstrip('-').isdigit()), None),
                     }
                 s['v'][l['NR_VOTAVEL']] = s['v'].get(l['NR_VOTAVEL'], 0) + int(l['QT_VOTOS'])
     json.dump(secoes, open(alvo, 'w'), ensure_ascii=False, separators=(',', ':'))

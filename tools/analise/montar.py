@@ -1,7 +1,7 @@
 # Junta os boletins dos dois turnos (por seção) e as contagens dos logs e grava os dados
 # estáticos da página /analise em public/analise/dados/.
 #
-# Uso: python tools/analise/montar.py <pasta compact> <logs_t2.json> <mun-e006258-cm.json> <saida> [br-c0001-e006257-u.json]
+# Uso: python tools/analise/montar.py <pasta compact> <logs_t2.json> <mun-e006258-cm.json> <saida> [br-c0001-e006257-u.json] [pasta bio]
 #
 # Arquivos gerados (todos JSON):
 #   resumo.json            Brasil, regiões, UFs, candidatos do 1º turno, horários e simulador
@@ -40,6 +40,8 @@ if len(sys.argv) > 5:
             for k, v in o.items():
                 if k != 'cand' and isinstance(v, (dict, list)): visitar(v, sg)
     visitar(json.load(open(sys.argv[5])))
+# Biometria por seção (tools/analise/extrair_biometria.py), opcional: 6º argumento.
+BIO = Path(sys.argv[6]) if len(sys.argv) > 6 else None
 logs = json.load(open(logs_arq))
 meta_logs = logs.pop('_meta', {})
 
@@ -71,10 +73,10 @@ def novo():
 def somar(ag, s1, s2, info):
     if s1:
         v13, v22, out, br, nu = votos(s1)
-        ag['t1'].update({'secoes': 1, 'apt': s1['apt'], 'comp': s1['comp'], 'abst': s1['abst'], '13': v13, '22': v22, 'out': out, 'br': br, 'nu': nu})
+        ag['t1'].update({'secoes': 1, 'apt': s1['apt'], 'comp': s1['comp'], 'abst': s1['abst'], '13': v13, '22': v22, 'out': out, 'br': br, 'nu': nu, 'sb': s1.get('sb') or 0})
     if s2:
         v13, v22, out, br, nu = votos(s2)
-        ag['t2'].update({'secoes': 1, 'apt': s2['apt'], 'comp': s2['comp'], 'abst': s2['abst'], '13': v13, '22': v22, 'br': br, 'nu': nu})
+        ag['t2'].update({'secoes': 1, 'apt': s2['apt'], 'comp': s2['comp'], 'abst': s2['abst'], '13': v13, '22': v22, 'br': br, 'nu': nu, 'sb': s2.get('sb') or 0})
         en = info.get('en')
         if en is not None and en > 17 * 60 + 15: ag['p'].update({'prorrogadas': 1, 'comp_prorrogadas': s2['comp'], '13_prorrogadas': v13, '22_prorrogadas': v22})
         elif en is not None and en > 17 * 60: ag['p'].update({'fila': 1})  # fechou entre 17:00 e 17:15 (fila)
@@ -109,6 +111,12 @@ for uf in todas_ufs:
     t1 = json.load(open(pasta / f't1_{uf}.json')) if (pasta / f't1_{uf}.json').exists() else {}
     t2 = json.load(open(pasta / f't2_{uf}.json')) if (pasta / f't2_{uf}.json').exists() else {}
     fz = fusos(t2) if uf != 'ZZ' else {}
+    if BIO:
+        for turno, dados in ((1, t1), (2, t2)):
+            arq = BIO / f'bio_t{turno}_{uf}.json'
+            if arq.exists():
+                for k, (q, _, _) in json.load(open(arq)).items():
+                    if k in dados: dados[k]['sb'] = q
     for s in t1.values():
         for n, q in s['v'].items(): cand1[n] += q
     municipios = collections.defaultdict(novo)
@@ -134,7 +142,7 @@ for uf in todas_ufs:
         def t(s):
             if not s: return None
             v13, v22, out, b, n = votos(s)
-            return [s['apt'], s['comp'], v13, v22, out, b, n, s['local'], s['agr'] or 0]
+            return [s['apt'], s['comp'], v13, v22, out, b, n, s['local'], s['agr'] or 0, s.get('sb')]
         lg = info.get('log')
         pos17 = None if not lg or 'erro' in lg else lg['pos17']
         parcial = 1 if lg and 'erro' not in lg and s2 and lg['votos'] < s2['comp'] else 0
@@ -185,7 +193,7 @@ erro = 1.96 * dp / math.sqrt(n) * math.sqrt(1 - n / N) if n and N else 0
 contados = sum(c['pos17'] for u in sim.values() for c in u.values())
 
 CAMPOS_SECAO = ['zona', 'secao', 't1', 't2', 'abertura_min', 'encerramento_min', 'votos_pos17', 'ultimo_voto_min', 'log_parcial']
-CAMPOS_TURNO = ['aptos', 'comparecimento', 'v13', 'v22', 'outros', 'brancos', 'nulos', 'local', 'agregadas']
+CAMPOS_TURNO = ['aptos', 'comparecimento', 'v13', 'v22', 'outros', 'brancos', 'nulos', 'local', 'agregadas', 'sem_biometria']
 json.dump({'campos': ['uf', 'cd', 'nome', 'ibge', 'aptos1', 'comp1', 'lula1', 'flavio1', 'outros1', 'brnu1', 'aptos2', 'comp2', 'lula2', 'flavio2', 'brnu2'], 'cidades': CIDADES},
           open(saida / 'cidades.json', 'w'), ensure_ascii=False, separators=(',', ':'))
 # Seções extremas do país: as 300 maiores quedas de Flávio em votos e as 300 maiores

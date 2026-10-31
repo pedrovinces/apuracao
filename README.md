@@ -72,3 +72,22 @@ python tools/analise/montar.py compact logs_t2.json mun-e006258-cm.json public/a
   (pleito 3220 = 1º turno, 3221 = 2º turno). Do log só saem contagens; dados de mesários não são guardados.
 - Horários convertidos para Brasília pela hora local de abertura (todas as urnas abrem às 8h de Brasília).
 - O voto é secreto: o log mostra quantos votaram em cada horário, nunca em quem.
+
+### Estudos complementares e respostas
+
+```sh
+# biometria por seção (2026), dos boletins de cada turno
+python tools/analise/extrair_biometria.py links.txt bio 1
+python tools/analise/extrair_biometria.py <pasta com bweb_2t_*.zip> bio 2
+# 2022 como referência: boletins dos dois turnos (dataset resultados-2022-boletim-de-urna)
+python tools/analise/extrair_bweb.py links2022.txt compact2022
+# biometria, horário x resultado, seções extremas e teste de vizinhança (2026 e 2022)
+python tools/analise/estudos.py compact bio compact2022 public/analise/dados/estudos.json
+```
+
+- `public/analise/respostas.html`: as afirmações sobre o 2º turno conferidas com esses dados, em linguagem simples,
+  com links para cada número no painel.
+- Teste de vizinhança: em cada local de votação com 4+ seções, a variação de Lula (1º→2º turno) de cada seção é
+  comparada com a mediana das vizinhas e ajustada (regressão nacional) pelo estoque de votos dos outros candidatos
+  no 1º turno e pela variação do comparecimento. Adulteração favorecendo um lado apareceria como excesso de
+  desvios para esse lado.

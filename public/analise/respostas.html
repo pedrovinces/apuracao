@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Respostas sobre a eleição</title>
+<meta name="description" content="As principais afirmações sobre o 2º turno presidencial de 2026, conferidas uma a uma com os boletins de urna e os logs oficiais do TSE, em linguagem simples.">
+<meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='16' height='32' fill='%23c81e1e'/%3E%3Crect x='16' width='16' height='32' fill='%231d4ed8'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../estilo.css?v=dev">
+<link rel="stylesheet" href="analise.css?v=dev">
+</head>
+<body class="pagina-analise pagina-respostas">
+<header class="topo">
+  <div class="titulo">
+    <h1>Respostas <span>o que os dados oficiais dizem</span></h1>
+    <a class="pilula" href="./">← Análise</a>
+  </div>
+</header>
+
+<main class="texto">
+  <section class="abertura">
+    <p>Depois do 2º turno, circularam várias afirmações sobre o resultado: que a prorrogação até as 19h teria virado a eleição, que milhões de pessoas votaram sem biometria, que urnas teriam código alterado. Esta página confere cada uma delas com os <b>arquivos oficiais do TSE</b>: o boletim de cada uma das 499.205 urnas, nos dois turnos, e o registro interno (log) das urnas que ficaram abertas até mais tarde.</p>
+    <p>Para cada afirmação há uma resposta curta, a explicação passo a passo, os pontos em que a resposta tem limites e botões que levam ao número no painel, para você conferir sozinho.</p>
+    <p class="nota-pequena">Todos os números vêm de arquivos públicos. Os scripts que fazem as contas estão no repositório do projeto (pasta <code>tools/analise</code>), para qualquer pessoa refazer.</p>
+    <nav class="indice" aria-label="Afirmações">
+      <a href="#prorrogacao">1. A prorrogação até 19h virou a eleição?</a>
+      <a href="#horario">2. Seções que fecharam depois das 17h deram mais votos para Lula?</a>
+      <a href="#biometria">3. 8,6 milhões votaram sem biometria: "quase o dobro da margem"</a>
+      <a href="#extremas">4. Seções com mais de 90% para um candidato</a>
+      <a href="#codigo">5. O código das urnas desviou votos de Flávio para Lula?</a>
+      <a href="#cidades">6. Cidades em que Flávio teve menos votos no 2º turno</a>
+      <a href="#integridade">7. O que dizem os testes oficiais das urnas</a>
+      <a href="#outros">8. Outras afirmações do relatório (Benford, 72 horas)</a>
+      <a href="#glossario">Palavras usadas nesta página</a>
+    </nav>
+  </section>
+
+  <article class="resposta" id="prorrogacao">
+    <h2>1. A prorrogação até as 19h virou a eleição?</h2>
+    <blockquote>"A prorrogação de duas horas impulsionou a virada governista."</blockquote>
+    <p class="veredito nao">Os dados não sustentam</p>
+    <p class="curta"><b>Em poucas palavras:</b> só cerca de <b>5,6 mil</b> votos foram registrados depois das 17h nas urnas que ficaram abertas até mais tarde. Somando uma estimativa para as filas no resto do país, o total fica perto de <b>36 mil</b>, e mesmo no pior caso não passa de <b>55 mil</b>. A vantagem de Lula foi de <b>4.430.191</b> votos: mais de 80 vezes o pior caso e mais de 120 vezes a estimativa central.</p>
+    <h3>Passo a passo</h3>
+    <ol>
+      <li><b>Quantas urnas ficaram abertas até mais tarde.</b> O boletim de cada urna registra a hora em que ela foi encerrada. Convertendo tudo para o horário de Brasília, <b>9.084 seções</b> (1,8% do total) fecharam depois das 17h15. Dessas, 6.715 fecharam perto das 19h, ou seja, usaram de fato a prorrogação. As outras 488.813 fecharam entre 17h00 e 17h15, como em qualquer eleição, atendendo quem já estava na fila.</li>
+      <li><b>Quantas pessoas votaram depois das 17h nessas urnas.</b> Cada urna guarda um registro interno (o log) com o horário de cada voto computado, sem dizer em quem foi o voto. Lemos o log de <b>todas</b> as 9.084 seções que fecharam depois das 17h15: somam <b>5.615 votos</b> depois das 17h. Ou seja, a maioria dessas urnas ficou aberta quase sem receber eleitores.</li>
+      <li><b>E as filas no resto do país?</b> Nas 488.813 seções que fecharam entre 17h00 e 17h15, lemos o log de uma amostra sorteada de 2.500. A média foi de 0,06 voto depois das 17h por seção, o que dá uma estimativa de cerca de <b>31 mil votos</b> no país (com margem de erro de 5 mil para mais ou para menos).</li>
+      <li><b>O teste do pior caso.</b> Suponha o cenário mais desfavorável possível para a conclusão: todos os votos depois das 17h foram para Lula e são retirados. A vantagem dele cairia de 4.430.191 para cerca de <b>4,375 milhões</b>. Retirando por inteiro as 9.084 seções que fecharam depois das 17h15, inclusive os votos da manhã e da tarde, a vantagem ficaria em <b>4.140.312</b>.</li>
+    </ol>
+    <h3>Onde esta resposta tem limites</h3>
+    <ul class="limites">
+      <li>Em 73 das 9.084 seções o log tem menos votos do que o boletim (provável troca de urna durante o dia ou votação em cédula). Nelas a contagem é um piso. Por isso usamos um teto: até 13.134 votos a mais, já incluídos no pior caso acima.</li>
+      <li>A conta das filas (31 mil) é uma estimativa feita com amostra, não uma contagem completa. A margem de erro está informada e também entra no pior caso.</li>
+      <li>Como o voto é secreto, nenhum arquivo diz em quem votaram as pessoas depois das 17h. Por isso a resposta usa o pior caso, e não uma estimativa de divisão desses votos.</li>
+    </ul>
+    <p class="confira"><a href="./?aba=horario">Ver as urnas após 17h</a><a href="./?aba=simulador">Abrir o simulador</a></p>
+  </article>
+
+  <article class="resposta" id="horario">
+    <h2>2. As seções que fecharam depois das 17h deram mais votos para Lula?</h2>
+    <blockquote>"Nas seções encerradas até as 17h00, Flávio registrou 52,39% dos votos válidos. Nas encerradas após as 17h00, o candidato governista registrou vantagem superior a 6,1 milhões de votos."</blockquote>
+    <p class="veredito parcial">Há uma diferença real, mas ela não vem da prorrogação, e os números citados não se confirmam</p>
+    <p class="curta"><b>Em poucas palavras:</b> sim, urnas que fecham mais tarde votam mais em Lula. Mas isso também aconteceu em <b>2022</b>, quando não houve prorrogação nenhuma. E "seção que fechou depois das 17h" não é o mesmo que "voto depois das 17h": quase todas as urnas do país fecham alguns minutos depois das 17h, e os votos delas foram dados ao longo do dia.</p>
+    <h3>Passo a passo</h3>
+    <ol>
+      <li><b>Toda urna fecha um pouco depois das 17h.</b> O encerramento começa às 17h, mas quem está na fila tem direito de votar. Por isso 73% das urnas do país fecharam entre 17h01 e 17h15. Dizer que "os votos dessas seções" vieram depois das 17h é como dizer que todos os clientes de uma loja compraram no último minuto só porque a porta fechou às 18h05.</li>
+      <li><b>Por que as urnas que fecham mais tarde votam mais em Lula.</b> Fecham mais tarde as seções com fila maior no fim do dia, em geral com mais eleitores e em regiões onde Lula já é mais votado (como o Nordeste e periferias urbanas). É um traço do perfil do eleitorado, não do horário em si.</li>
+      <li><b>A prova: em 2022 aconteceu igual.</b> Em 2022 a votação terminou às 17h, sem prorrogação. Mesmo assim, Lula teve 50,7% nas urnas que fecharam até 17h04, 52,8% nas que fecharam entre 17h05 e 17h14 e 56,4% nas que fecharam depois. Em 2026, os números foram 51,2%, 56,3% e 55,8%. O desenho é o mesmo nas duas eleições.</li>
+      <li><b>Os números do relatório não se confirmam.</b> Com o horário de Brasília, Flávio teve <b>50,99%</b> nas urnas que fecharam ainda dentro do minuto das 17h00, e Lula ficou à frente por <b>5,0 milhões</b> nas demais. Os números do relatório (52,39% e 6,1 milhões) se aproximam do que se obtém <b>ignorando o fuso horário</b> de estados como Acre, Amazonas e Mato Grosso, cujas urnas registram a hora local: ali, "17h" no relógio da urna corresponde a 18h ou 19h em Brasília. Sem essa correção, urnas que fecharam no horário normal parecem ter fechado tarde.</li>
+    </ol>
+    <h3>Onde esta resposta tem limites</h3>
+    <ul class="limites">
+      <li>Não temos acesso ao método exato usado pelo relatório; a explicação pelo fuso horário é a que melhor se aproxima dos números citados, mas não conseguimos reproduzir exatamente 52,39% nem 6,1 milhões.</li>
+      <li>A explicação pelo perfil do eleitorado (filas maiores onde Lula é mais forte) é a mais provável, e é reforçada por 2022, mas não foi medida diretamente aqui.</li>
+    </ul>
+    <p class="confira"><a href="./?aba=ref2022">Comparar com 2022</a><a href="./?aba=horario">Resultado por horário de encerramento</a></p>
+  </article>
+
+  <article class="resposta" id="biometria">
+    <h2>3. "8,6 milhões votaram sem biometria, quase o dobro da margem"</h2>
+    <blockquote>"Mais de 8,6 milhões de votos foram emitidos sem verificação biométrica digital, quase o dobro da margem final entre os candidatos."</blockquote>
+    <p class="veredito parcial">O número confere; a conclusão, não</p>
+    <p class="curta"><b>Em poucas palavras:</b> foram mesmo <b>8.632.488</b> eleitores. Mas no <b>1º turno</b>, que Flávio venceu, foram <b>8.342.249</b>, praticamente a mesma proporção (6,73% contra 6,66%). Em 2022 a proporção foi ainda maior (8,06%). E onde essa liberação aumentou do 1º para o 2º turno, Lula não cresceu mais do que nos outros lugares.</p>
+    <h3>Passo a passo</h3>
+    <ol>
+      <li><b>O que esse número é.</b> O boletim de urna informa quantos eleitores <b>com digital cadastrada</b> votaram <b>sem que a digital fosse reconhecida</b>: dedo machucado, gasto, com calo, leitor sujo. Nesses casos o mesário confere o documento do eleitor e libera a votação. Esse número diz quantas pessoas votaram assim, não em quem votaram.</li>
+      <li><b>Não é novidade do 2º turno.</b> 6,66% de quem votou no 1º turno e 6,73% no 2º. Em 2022: 8,72% e 8,06%. É uma proporção estável, que acontece em toda eleição.</li>
+      <li><b>Comparar com a margem não faz sentido.</b> Essas 8,6 milhões de pessoas votaram nos dois candidatos, como todo mundo. Para esse grupo ter decidido a eleição, seria preciso que, dentro dele, houvesse fraude concentrada num lado e maior do que 4,4 milhões de votos. O tamanho do grupo, sozinho, não diz nada sobre isso.</li>
+      <li><b>O teste que importa.</b> Se a liberação sem digital tivesse sido usada para inflar votos de Lula, as seções onde ela mais aumentou do 1º para o 2º turno mostrariam Lula crescendo mais. Dividimos as seções em 10 grupos, da que mais reduziu a liberação à que mais aumentou. Lula cresceu <b>+6,1</b> pontos no grupo que mais reduziu e <b>+5,9</b> no grupo que mais aumentou: praticamente igual, até um pouco menos. A medida de relação (correlação) deu <b>−0,01</b>, que na prática quer dizer nenhuma relação.</li>
+      <li><b>Nem com o horário.</b> O relatório diz que urnas que fecharam mais tarde liberaram mais gente sem digital. Os dados mostram o contrário: 6,80% nas que fecharam até 17h04, 6,38% entre 17h05 e 17h14 e 6,47% depois.</li>
+    </ol>
+    <h3>Onde esta resposta tem limites</h3>
+    <ul class="limites">
+      <li>O boletim diz quantas liberações houve, não se cada uma foi correta. Os dados não permitem descartar irregularidades pontuais em alguma seção; o que mostram é que não há sinal disso no conjunto do país nem relação com o resultado.</li>
+      <li>Os dados públicos não informam se havia fiscal de partido em cada seção; por isso não foi possível testar a hipótese do relatório sobre seções sem fiscalização.</li>
+    </ul>
+    <p class="confira"><a href="./?aba=biometria">Ver a biometria por estado e horário</a><a href="./?aba=ref2022">Comparar com 2022</a></p>
+  </article>
+
+  <article class="resposta" id="extremas">
+    <h2>4. Seções com mais de 90% para um candidato</h2>
+    <blockquote>"100% dos votos válidos: 106 seções para Lula, 4 para Flávio. Mais de 90%: 6.899 contra 384."</blockquote>
+    <p class="veredito parcial">Os números conferem, mas o padrão é antigo e se repete em toda eleição</p>
+    <p class="curta"><b>Em poucas palavras:</b> as contagens estão certas. Só que no <b>1º turno</b>, que Flávio venceu, já havia 3.686 seções com mais de 90% para Lula contra 186 para Flávio. Em <b>2022</b>, a desproporção foi ainda maior: 9.538 contra 220.</p>
+    <h3>Passo a passo</h3>
+    <ol>
+      <li><b>Por que existe essa desproporção.</b> O voto em Lula é muito concentrado em certas comunidades (por exemplo, no interior do Nordeste, em aldeias indígenas e em comunidades tradicionais), onde quase todos votam igual. O voto no candidato do PL se espalha mais pelo país, com menos lugares de quase unanimidade.</li>
+      <li><b>Não é coisa do 2º turno de 2026.</b> Se essas seções fossem sinal de fraude no 2º turno, o padrão teria surgido do nada. Ele já estava no 1º turno e foi ainda mais forte em 2022.</li>
+      <li><b>O próprio relatório reconhece.</b> Ele mesmo escreve que seções assim "existem em todas as eleições brasileiras" e "não constituem, por si só, prova de fraude".</li>
+    </ol>
+    <h3>Onde esta resposta tem limites</h3>
+    <ul class="limites">
+      <li>Em tese, uma seção quase unânime é capaz de esconder pressão sobre eleitores (o chamado voto de cabresto). Isso não aparece em dados de urna; só uma apuração local apontaria. O que os dados mostram é que o padrão não é novo nem exclusivo deste turno.</li>
+    </ul>
+    <p class="confira"><a href="./?aba=ref2022">Ver a comparação com 2022</a><a href="./?aba=cidades">Explorar cidades</a></p>
+  </article>
+
+  <article class="resposta" id="codigo">
+    <h2>5. O código das urnas desviou votos de Flávio para Lula?</h2>
+    <blockquote>"Algumas urnas poderiam estar com o código alterado: o eleitor vota em Flávio e, por dentro, a urna soma para Lula."</blockquote>
+    <p class="veredito nao">Os dados não mostram sinal disso, e os testes oficiais também não</p>
+    <p class="curta"><b>Em poucas palavras:</b> a virada não veio de Flávio perder votos. Ele <b>ganhou 3,7 milhões</b> do 1º para o 2º turno; Lula ganhou 10,4 milhões, principalmente com os 9,3 milhões de votos dos outros candidatos e com 3 milhões de pessoas a mais votando. O teste de comparação entre urnas da mesma escola também não encontra um desvio favorecendo um lado que tenha tamanho para mudar o resultado.</p>
+    <h3>Passo a passo</h3>
+    <ol>
+      <li><b>De onde veio a virada.</b> No 1º turno, Flávio teve 56,1 milhões e Lula 53,9 milhões; outros candidatos somaram 9,3 milhões. No 2º turno, esses 9,3 milhões ficaram livres e mais 3 milhões de pessoas foram votar. Lula ficou com a maior parte (ganhou 10,4 milhões) e Flávio com o resto (ganhou 3,7 milhões). Para um desvio de código ter decidido a eleição, ele precisaria ter movido pelo menos 2,2 milhões de votos.</li>
+      <li><b>Teste da vizinhança.</b> Seções da mesma escola reúnem eleitores parecidos e costumam mudar de forma parecida entre os turnos. Comparamos cada uma das 424.454 seções com as vizinhas. Se urnas tivessem sido alteradas para favorecer Lula, haveria muito mais seções destoando na direção dele do que na de Flávio.</li>
+      <li><b>O que o teste mostrou.</b> Há desvios para os dois lados, como esperado. Considerando desvios de 5 pontos ou mais, foram <b>3.875</b> seções na direção de Lula e <b>3.204</b> na de Flávio. Os votos envolvidos nesses desvios somam cerca de 50,6 mil para um lado e 41,5 mil para o outro: uma diferença líquida de cerca de <b>9 mil votos</b>, diante de uma vantagem de 4,4 milhões.</li>
+      <li><b>Comparação com 2022.</b> Em 2022, o mesmo teste deu um leve desequilíbrio para o outro lado (2.286 seções na direção de Lula contra 2.640 na de Bolsonaro). Desequilíbrios desse tamanho aparecem naturalmente, ora para um lado, ora para o outro.</li>
+      <li><b>As urnas foram as mesmas.</b> Em 494.770 das 499.205 seções a mesma urna física foi usada nos dois turnos. Uma urna adulterada para o 2º turno estaria nas mesmas escolas e diante dos mesmos eleitores do 1º turno, em que Flávio venceu.</li>
+    </ol>
+    <h3>Onde esta resposta tem limites</h3>
+    <ul class="limites">
+      <li><b>O que os dados de resultado não alcançam:</b> uma alteração perfeita e igual em todas as urnas de uma escola não faria nenhuma delas destoar das vizinhas. Esse tipo de hipótese só é testado pelos procedimentos de auditoria (assinatura digital do programa, teste de integridade com urnas sorteadas, boletim impresso afixado em cada seção), descritos no item 7.</li>
+      <li>O ajuste do teste de vizinhança é simples (considera os votos dos outros candidatos no 1º turno e a variação do comparecimento). Depois do ajuste ainda sobra uma pequena diferença a favor de Lula em 2026 (cerca de 9 mil votos líquidos), que não explicamos completamente. Pelo tamanho, ela não tem como mudar o resultado, e em 2022 a sobra foi para o lado oposto.</li>
+    </ul>
+    <p class="confira"><a href="./?aba=vizinhanca">Ver o teste de vizinhança</a><a href="./">Ver o comparativo 1º → 2º turno</a></p>
+  </article>
+
+  <article class="resposta" id="cidades">
+    <h2>6. Cidades em que Flávio teve menos votos no 2º turno</h2>
+    <blockquote>"Em muitas cidades Flávio caiu muito, teve até menos votos no 2º turno do que no 1º."</blockquote>
+    <p class="veredito parcial">Aconteceu, mas em escala pequena e quase sempre junto com a queda do comparecimento</p>
+    <p class="curta"><b>Em poucas palavras:</b> Flávio teve menos votos no 2º turno em <b>938</b> das 5.571 cidades. Somadas, essas quedas dão <b>133.900 votos</b>, e nessas mesmas cidades <b>274.667 pessoas a menos</b> foram votar. Em 728 delas o comparecimento caiu.</p>
+    <h3>Passo a passo</h3>
+    <ol>
+      <li><b>Menos gente votando, menos votos para todos.</b> Quando o comparecimento cai numa cidade (feriado, chuva, gente viajando, desinteresse no 2º turno), o candidato que já era forte ali tende a perder votos, mesmo mantendo o percentual.</li>
+      <li><b>As quedas são pequenas.</b> Seção por seção, Flávio teve menos votos em 16,5% das seções, com queda típica de <b>3 votos</b>. Lula teve queda em 1,9% das seções. A diferença entre os dois é esperada: Lula tinha mais espaço para crescer com os votos dos outros candidatos.</li>
+      <li><b>Nenhuma queda grande em percentual.</b> A maior queda de Flávio, em percentual, entre as cidades brasileiras foi de 9,1 pontos (Rafael Godeiro, RN). Na cidade típica, ele <b>subiu</b> 0,6 ponto.</li>
+      <li><b>Exemplo: Macapá (AP).</b> É a cidade em que Flávio mais perdeu votos: 3.785. Mas 19.220 pessoas a menos foram votar lá no 2º turno.</li>
+    </ol>
+    <h3>Onde esta resposta tem limites</h3>
+    <ul class="limites">
+      <li>A explicação pela queda do comparecimento vale para a maioria dos casos (728 de 938), mas não para todos. Nas demais cidades, o eleitor que votou em Flávio no 1º turno e em Lula no 2º é uma explicação possível, que os dados (voto secreto) não permitem confirmar caso a caso.</li>
+    </ul>
+    <p class="confira"><a href="./?aba=cidades&amp;fcaiu=1&amp;ordem=queda_fv">Cidades em que Flávio perdeu votos</a><a href="./?aba=cidades&amp;fcaiu=1&amp;ordem=queda_fp">Ordenar pela maior queda em %</a></p>
+  </article>
+
+  <article class="resposta" id="integridade">
+    <h2>7. O que dizem os testes oficiais das urnas</h2>
+    <p class="veredito info">Informação oficial (confira nos links)</p>
+    <p class="curta"><b>Em poucas palavras:</b> no dia do 2º turno, urnas sorteadas na véspera foram retiradas das seções e testadas com votos em papel, na frente de fiscais. Ao fim, compara-se o que foi votado no papel com o que a urna contou. Segundo as notícias oficiais da Justiça Eleitoral, não houve divergência.</p>
+    <h3>Passo a passo</h3>
+    <ol>
+      <li><b>Como funciona o teste de integridade.</b> Urnas prontas para a votação são sorteadas e levadas a um local público. Em vez de eleitores, pessoas votam a partir de cédulas de papel preenchidas antes, com tudo filmado. No fim do dia, o resultado da urna é comparado com as cédulas. Se o programa da urna desviasse votos, a diferença apareceria.</li>
+      <li><b>Resultados divulgados.</b> No TSE, em Brasília, duas urnas receberam 389 votos de cédulas, sem divergência. Houve testes também nos tribunais regionais: por exemplo, 33 urnas em São Paulo, 27 em Santa Catarina e 23 auditadas em Alagoas, todos sem divergência segundo os tribunais. Parte das urnas foi testada também com biometria.</li>
+      <li><b>Por que isso importa para o item 5.</b> É o tipo de teste que alcança a hipótese de código alterado, inclusive a de alteração igual em todas as urnas, que comparações de resultado não detectam.</li>
+    </ol>
+    <h3>Onde esta resposta tem limites</h3>
+    <ul class="limites">
+      <li>Os números deste item vêm de notícias oficiais encontradas em busca; os sites da Justiça Eleitoral bloquearam a leitura automática, então confira os detalhes nos links abaixo.</li>
+      <li>O teste é feito por amostra: algumas dezenas de urnas por estado, não todas. Ele mostra que as urnas sorteadas funcionaram corretamente; quanto mais urnas testadas, maior a confiança.</li>
+    </ul>
+    <p class="confira">
+      <a href="https://www.tse.jus.br/comunicacao/noticias/2026/Outubro/teste-de-integridade-do-2o-turno-no-tse-confirma-correspondencia-entre-cedulas-e-votos-nas-urnas" target="_blank" rel="noopener">TSE: teste do 2º turno</a>
+      <a href="https://www.tre-sp.jus.br/comunicacao/noticias/2026/Outubro/teste-de-integridade-das-urnas-no-2o-turno-e-concluido-sem-divergencias-em-sao-paulo" target="_blank" rel="noopener">TRE-SP</a>
+      <a href="https://www.tre-sc.jus.br/comunicacao/noticias/2026/Outubro/teste-de-integridade-confirma-seguranca-da-urna-e-reforca-a-transparencia-das-eleicoes-2026" target="_blank" rel="noopener">TRE-SC</a>
+      <a href="https://agenciabrasil.ebc.com.br/justica/noticia/2026-10/tribunais-eleitorais-definem-urnas-que-serao-auditadas-no-2o-turno" target="_blank" rel="noopener">Agência Brasil</a>
+      <a href="https://www.justicaeleitoral.jus.br/fato-ou-boato/checagens/2026/relatorio-apocrifo-distorce-dados-para-sugerir-fraude-nas-eleicoes-2026" target="_blank" rel="noopener">Checagem da Justiça Eleitoral sobre o relatório</a>
+    </p>
+  </article>
+
+  <article class="resposta" id="outros">
+    <h2>8. Outras afirmações do relatório</h2>
+    <h3>"O pacote de microdados foi liberado cerca de 72 horas após a proclamação"</h3>
+    <p class="veredito nao">Os próprios arquivos indicam outra data</p>
+    <p>Cada arquivo de boletins traz a data em que foi gerado. Os do 2º turno foram gerados em <b>26/10/2026 às 07h42</b>, menos de 15 horas depois do fim da votação.</p>
+    <ul class="limites"><li>A data de geração do arquivo não garante a hora exata em que ele apareceu no portal de dados abertos; mas indica que os dados ficaram prontos muito antes de 72 horas.</li></ul>
+    <h3>"Teste da Lei de Benford"</h3>
+    <p class="veredito info">O próprio relatório reconhece que não serve como prova</p>
+    <p>A Lei de Benford descreve como o primeiro dígito se distribui em números que variam em muitas escalas (como valores de contas). Votos por seção não seguem esse padrão, porque o tamanho das seções é limitado pela própria Justiça Eleitoral (algumas centenas de eleitores). O relatório escreve que "a ausência de aderência a Benford não constitui, por si só, evidência de manipulação", e nós concordamos.</p>
+    <h3>O capítulo sobre "contexto institucional"</h3>
+    <p>Esse capítulo trata de decisões judiciais, política e relações internacionais. Não são afirmações sobre dados de urna, e por isso ficam fora desta página.</p>
+    <p class="confira"><a href="https://dadosabertos.tse.jus.br/dataset/resultados-2026-boletim-de-urna" target="_blank" rel="noopener">Dados abertos do TSE (boletins de urna)</a></p>
+  </article>
+
+  <section class="resposta" id="glossario">
+    <h2>Palavras usadas nesta página</h2>
+    <dl class="glossario">
+      <dt>Seção</dt><dd>Grupo de eleitores que vota numa mesma urna (algumas centenas de pessoas).</dd>
+      <dt>Local de votação</dt><dd>O prédio (em geral uma escola) onde ficam várias seções.</dd>
+      <dt>Boletim de urna</dt><dd>O resultado de cada urna, impresso e afixado na seção ao fim da votação e publicado pelo TSE.</dd>
+      <dt>Log da urna</dt><dd>Registro interno, com horário, de tudo o que a urna fez no dia (inclusive "um voto foi computado"), sem dizer em quem foi o voto.</dd>
+      <dt>Ponto percentual (p.p.)</dt><dd>Diferença entre dois percentuais. De 45% para 51% são 6 pontos percentuais.</dd>
+      <dt>Correlação</dt><dd>Medida de quanto duas coisas andam juntas, de −1 a +1. Perto de zero quer dizer que não andam juntas.</dd>
+      <dt>Amostra e margem de erro</dt><dd>Quando não dá para olhar tudo, sorteia-se uma parte. A margem de erro indica até quanto o resultado real tende a ficar acima ou abaixo da estimativa.</dd>
+      <dt>Pior caso</dt><dd>A hipótese mais desfavorável possível para uma conclusão. Se a conclusão se mantém até no pior caso, ela é sólida.</dd>
+    </dl>
+  </section>
+</main>
+
+<footer class="rodape">
+  <p>Fontes: boletins de urna dos dois turnos de 2026 e de 2022 (dados abertos do TSE) e logs das urnas do 2º turno de 2026 (resultados.tse.jus.br). Os números desta página são calculados pelos scripts em <code>tools/analise/</code> do repositório e conferem com o resultado oficial.</p>
+</footer>
+<script type="module">import { iniciarMetricas } from '../metricas.js?v=dev'; iniciarMetricas();</script>
+</body>
+</html>
