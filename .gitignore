@@ -1,3 +1,4 @@
 node_modules/
 .DS_Store
 testes/
+__pycache__/
