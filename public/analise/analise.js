@@ -110,27 +110,41 @@ function trilha() {
   $('#trilha').innerHTML = partes.map(([t, alvo], i) => (i < partes.length - 1 && alvo ? `<button type="button" data-ir='${JSON.stringify(alvo)}'>${esc(t)}</button><span aria-hidden="true">›</span>` : `<b>${esc(t)}</b>`)).join('');
 }
 
-// Cartão com os números dos dois turnos lado a lado.
+// Cartão do comparativo, pensado para o celular: um bloco por candidato com percentuais
+// grandes (1º → 2º turno), votos em formato curto e barras comparando os turnos; os números
+// exatos ficam num "ver números exatos" para quem quiser conferir.
 function cartaoTurnos(a, nome) {
   const i = ind(a), t1 = a.t1 || {}, t2 = a.t2 || {};
-  // Duas linhas por item (nome em cima, números embaixo): cabe em 390 px com os números completos.
-  const linha = (rot, cor, v1, p1, v2, p2) => `<tr class="rotulo"><th colspan="3"><i class="ponto" style="background:${cor}"></i>${rot}</th></tr><tr><td>${v1 == null ? '–' : fmt.format(v1)}<small>${p1 == null ? '' : pct(p1)}</small></td><td>${v2 == null ? '–' : fmt.format(v2)}<small>${p2 == null ? '' : pct(p2)}</small></td><td class="delta">${v1 != null && v2 != null ? sinal(v2 - v1) : '–'}</td></tr>`;
+  const curto = (v) => (v == null ? '–' : Math.abs(v) >= 10000 ? fmtC.format(v) : fmt.format(v));
+  const venc = (m) => (m == null ? '–' : `<b class="${m > 0 ? 't13' : 't22'}">${m > 0 ? 'Lula' : 'Flávio'}</b> <small>+${Math.abs(m).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} p.p.</small>`);
+  const bloco = (n, nomeC, p1, p2, v1, v2) => `<div class="cand-turnos c${n}">
+      <img src="../img/${n}.webp?v=dev" alt="" class="ct-foto" width="172" height="240">
+      <div class="ct-corpo">
+        <div class="ct-nome">${nomeC}</div>
+        <div class="ct-pct"><span class="ct-p1">${pct(p1)}</span><span class="ct-seta" aria-hidden="true">→</span><b class="t${n}">${pct(p2)}</b></div>
+        <div class="ct-votos">${curto(v1)} → <b>${curto(v2)}</b> votos <span class="ct-saldo ${v2 - v1 >= 0 ? 'pos' : 'neg'}">${sinal(v2 - v1, curto)}</span></div>
+        <div class="ct-barras" aria-hidden="true"><span style="width:${p1 ?? 0}%" class="b1"></span><span style="width:${p2 ?? 0}%" class="b2 b${n}"></span></div>
+      </div></div>`;
   const bn1 = (t1.br || 0) + (t1.nu || 0), bn2 = (t2.br || 0) + (t2.nu || 0);
-  return `<section class="cartao">
+  const pab1 = t1.apt ? (100 * t1.abst) / t1.apt : null, pab2 = t2.apt ? (100 * t2.abst) / t2.apt : null;
+  const linha = (rot, v1, v2) => `<tr><th>${rot}</th><td>${v1 == null ? '–' : fmt.format(v1)}</td><td>${v2 == null ? '–' : fmt.format(v2)}</td><td>${v1 != null && v2 != null ? sinal(v2 - v1) : '–'}</td></tr>`;
+  return `<section class="cartao cartao-comparativo">
     <h2>${esc(nome)}</h2>
-    <div class="destaque-margem">
-      <div><span>Margem no 1º turno</span><b class="${i.m1 > 0 ? 't13' : 't22'}">${i.m1 == null ? '–' : (i.m1 > 0 ? 'Lula ' : 'Flávio ') + pp(Math.abs(i.m1)).replace('+', '')}</b></div>
-      <div><span>Margem no 2º turno</span><b class="${i.m2 > 0 ? 't13' : 't22'}">${i.m2 == null ? '–' : (i.m2 > 0 ? 'Lula ' : 'Flávio ') + pp(Math.abs(i.m2)).replace('+', '')}</b></div>
+    <div class="quem-venceu"><div><span>1º turno</span>${venc(i.m1)}</div><span class="qv-seta" aria-hidden="true">→</span><div><span>2º turno</span>${venc(i.m2)}</div></div>
+    ${bloco(13, 'Lula', i.l1, i.l2, t1['13'], t2['13'])}
+    ${bloco(22, 'Flávio Bolsonaro', i.f1, i.f2, t1['22'], t2['22'])}
+    <p class="legenda-barras"><span class="lb1"></span>1º turno <span class="lb2"></span>2º turno · % dos votos válidos</p>
+    <div class="mini-quadros">
+      <div><span>Outros candidatos</span><b>${pct(i.o1)}</b><small>${curto(t1.out)} votos no 1º turno</small></div>
+      <div><span>Brancos e nulos</span><b>${curto(bn1)} → ${curto(bn2)}</b><small>${sinal(bn2 - bn1, curto)}</small></div>
+      <div><span>Abstenção</span><b>${pct(pab1)} → ${pct(pab2)}</b><small>${sinal((t2.abst || 0) - (t1.abst || 0), curto)} eleitores</small></div>
     </div>
-    <div class="tabela-rolagem"><table class="tabela-turnos"><thead><tr><th>1º turno</th><th>2º turno</th><th>Saldo</th></tr></thead><tbody>
-      ${linha('Lula (13)', COR[13], t1['13'], i.l1, t2['13'], i.l2)}
-      ${linha('Flávio (22)', COR[22], t1['22'], i.f1, t2['22'], i.f2)}
-      ${linha('Outros candidatos', COR.out, t1.out, i.o1, 0, null)}
-      ${linha('Brancos e nulos', COR.bn, bn1, null, bn2, null)}
-      ${linha('Abstenção', COR.abst, t1.abst, t1.apt ? (100 * t1.abst) / t1.apt : null, t2.abst, t2.apt ? (100 * t2.abst) / t2.apt : null)}
-      ${linha('Eleitores aptos', 'transparent', t1.apt, null, t2.apt, null)}
-    </tbody></table></div>
-    <p class="nota-pequena">Percentuais de candidatos sobre os votos válidos de cada turno; abstenção sobre os aptos.</p>
+    <details class="exatos"><summary>Ver números exatos</summary>
+      <div class="tabela-rolagem"><table class="tabela-exata"><thead><tr><th></th><th>1º turno</th><th>2º turno</th><th>Saldo</th></tr></thead><tbody>
+        ${linha('Lula', t1['13'], t2['13'])}${linha('Flávio', t1['22'], t2['22'])}${linha('Outros', t1.out, 0)}${linha('Brancos', t1.br, t2.br)}${linha('Nulos', t1.nu, t2.nu)}${linha('Abstenção', t1.abst, t2.abst)}${linha('Compareceram', t1.comp, t2.comp)}${linha('Aptos', t1.apt, t2.apt)}
+      </tbody></table></div>
+      <p class="nota-pequena">Percentuais dos candidatos sobre os votos válidos de cada turno; abstenção sobre os aptos.</p>
+    </details>
   </section>`;
 }
 
