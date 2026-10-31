@@ -645,21 +645,25 @@ async function abaRef2022() {
   await lerEstudos();
   const a = E['2026'], b = E['2022'];
   const lulaFaixa = (e, de, ate) => { let l = 0, f = 0; for (const [m, h] of Object.entries(e.horario)) if (+m >= de && +m < ate) { l += h['13']; f += h['22']; } return l + f ? (100 * l) / (l + f) : null; };
-  const linha = (rot, x26, x22, nota = '') => `<tr><th>${rot}${nota ? `<small>${nota}</small>` : ''}</th><td>${x26}</td><td>${x22}</td></tr>`;
+  // Uma comparação por bloco: rótulo em cima, 2026 e 2022 lado a lado (cabe em 390 px).
+  const linha = (rot, x26, x22, nota = '') => `<div class="cmp"><div class="cmp-rot">${rot}${nota ? `<small>${nota}</small>` : ''}</div>
+    <div class="cmp-vals"><div class="c26"><small>2026</small><b>${x26}</b></div><div class="c22"><small>2022</small><b>${x22}</b></div></div></div>`;
+  const grupo = (titulo, itens) => `<h3 class="cmp-grupo">${titulo}</h3>${itens}`;
   $('#conteudo').innerHTML = `<section class="cartao"><h2>2026 comparado com 2022</h2>
       <p class="nota-pequena">Em 2022 o 2º turno também foi entre Lula (13) e um candidato do PL (Jair Bolsonaro, 22), sem prorrogação do horário. Comparar as duas eleições mostra o que é padrão de toda eleição e o que foi diferente em 2026.</p>
-      <div class="tabela-rolagem"><table class="tabela-ref"><thead><tr><th></th><th>2026</th><th>2022</th></tr></thead><tbody>
-        ${linha('Seções com 90% ou mais para Lula (2º turno)', fmt.format(a.extremos.L90_t2), fmt.format(b.extremos.L90_t2))}
-        ${linha('Seções com 90% ou mais para o candidato 22 (2º turno)', fmt.format(a.extremos.F90_t2), fmt.format(b.extremos.F90_t2))}
-        ${linha('Seções com 100% para Lula / para o 22', `${a.extremos.L100_t2} / ${a.extremos.F100_t2 || 0}`, `${b.extremos.L100_t2} / ${b.extremos.F100_t2 || 0}`)}
-        ${linha('Seções com 90% ou mais para Lula (1º turno)', fmt.format(a.extremos.L90_t1), fmt.format(b.extremos.L90_t1))}
-        ${linha('Liberados sem digital, 2º turno', pct(a.bio.t2.taxa, 2), pct(b.bio.t2.taxa, 2))}
-        ${linha('Liberados sem digital, 1º turno', pct(a.bio.t1.taxa, 2), pct(b.bio.t1.taxa, 2), b.bio.t1.comp < 100e6 ? 'em 2022 o campo veio vazio em parte dos boletins do 1º turno' : '')}
-        ${linha('Lula % nas urnas que fecharam até 17:00', pct(lulaFaixa(a, 0, 17 * 60 + 5)), pct(lulaFaixa(b, 0, 17 * 60 + 5)), 'faixa 16:30–17:04')}
-        ${linha('Lula % nas urnas que fecharam 17:05–17:15', pct(lulaFaixa(a, 17 * 60 + 5, 17 * 60 + 15)), pct(lulaFaixa(b, 17 * 60 + 5, 17 * 60 + 15)))}
-        ${linha('Seções destoando 5+ p.p. das vizinhas (Lula × 22)', `${fmt.format(a.vizinhanca.acima['5'])} × ${fmt.format(a.vizinhanca.abaixo['5'])}`, `${fmt.format(b.vizinhanca.acima['5'])} × ${fmt.format(b.vizinhanca.abaixo['5'])}`)}
-        ${linha('Correlação entre variação da taxa sem digital e variação de Lula', a.bio_corr.toLocaleString('pt-BR'), b.bio_corr.toLocaleString('pt-BR'))}
-      </tbody></table></div></section>
+      <div class="cmp-legenda"><span class="c26">2026</span> Lula × Flávio Bolsonaro <span class="c22">2022</span> Lula × Jair Bolsonaro</div>
+      ${grupo('Seções quase unânimes', linha('90% ou mais para Lula no 2º turno', fmt.format(a.extremos.L90_t2), fmt.format(b.extremos.L90_t2))
+        + linha('90% ou mais para o candidato 22 no 2º turno', fmt.format(a.extremos.F90_t2), fmt.format(b.extremos.F90_t2))
+        + linha('100% para Lula / 100% para o 22', `${a.extremos.L100_t2} / ${a.extremos.F100_t2 || 0}`, `${b.extremos.L100_t2} / ${b.extremos.F100_t2 || 0}`)
+        + linha('90% ou mais para Lula no 1º turno', fmt.format(a.extremos.L90_t1), fmt.format(b.extremos.L90_t1)))}
+      ${grupo('Biometria', linha('Liberados sem digital, 1º turno', pct(a.bio.t1.taxa, 2), pct(b.bio.t1.taxa, 2))
+        + linha('Liberados sem digital, 2º turno', pct(a.bio.t2.taxa, 2), pct(b.bio.t2.taxa, 2))
+        + linha('Relação com o crescimento de Lula', a.bio_corr.toLocaleString('pt-BR'), b.bio_corr.toLocaleString('pt-BR'), 'correlação: perto de 0 = nenhuma relação'))}
+      ${grupo('Horário de encerramento', linha('Lula nas urnas que fecharam até 17:04', pct(lulaFaixa(a, 0, 17 * 60 + 5)), pct(lulaFaixa(b, 0, 17 * 60 + 5)))
+        + linha('Lula nas urnas que fecharam entre 17:05 e 17:14', pct(lulaFaixa(a, 17 * 60 + 5, 17 * 60 + 15)), pct(lulaFaixa(b, 17 * 60 + 5, 17 * 60 + 15)))
+        + linha('Lula nas urnas que fecharam às 17:15 ou depois', pct(lulaFaixa(a, 17 * 60 + 15, 24 * 60)), pct(lulaFaixa(b, 17 * 60 + 15, 24 * 60)), '2022 não teve prorrogação'))}
+      ${grupo('Teste de vizinhança', linha('Seções destoando 5+ p.p. das vizinhas, para Lula × para o 22', `${fmt.format(a.vizinhanca.acima['5'])} × ${fmt.format(a.vizinhanca.abaixo['5'])}`, `${fmt.format(b.vizinhanca.acima['5'])} × ${fmt.format(b.vizinhanca.abaixo['5'])}`))}
+    </section>
     <section class="cartao"><h2>Resultado por horário de encerramento</h2><p class="nota-pequena">Percentual de Lula conforme o horário em que a urna fechou (Brasília). Em 2022 não houve prorrogação, e o mesmo desenho aparece: urnas que fecham mais tarde, em geral com fila maior, votam mais em Lula.</p><div id="g-ref" class="grafico"></div></section>`;
   graficoRef(a.horario, b.horario);
 }
@@ -765,7 +769,14 @@ async function desenhar() {
   }
 }
 
+// Botão fixo "↑ Topo": as páginas de análise são longas no celular.
+function botaoTopo() {
+  const b = $('.topo-flutuante'); if (!b) return;
+  addEventListener('scroll', () => { b.hidden = scrollY < 700; }, { passive: true });
+  b.onclick = (ev) => { ev.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+}
 function ligar() {
+  botaoTopo();
   document.querySelectorAll('.abas button').forEach((b) => (b.onclick = () => { est.aba = b.dataset.aba; evento('analise-aba', { aba: est.aba }); irPara({ regiao: est.regiao, uf: est.uf, mun: est.mun, zona: est.zona, secao: est.secao }); }));
   document.addEventListener('click', (ev) => {
     const alvo = ev.target.closest('[data-ir]');

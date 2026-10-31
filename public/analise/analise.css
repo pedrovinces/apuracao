@@ -205,3 +205,46 @@ tr.atual td { background: var(--fundo); font-weight: 700; }
 .confira a[target] { background: var(--fundo); color: var(--texto); border: 1px solid var(--borda); }
 .glossario dt { font-weight: 700; margin-top: 10px; }
 .glossario dd { margin: 2px 0 0; }
+
+/* Respostas recolhíveis, comparações e navegação de volta ao topo. */
+html { scroll-behavior: smooth; }
+.completa > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; margin-top: 12px; border-radius: 12px; border: 1px solid var(--borda); background: var(--fundo); font-weight: 700; font-size: 15px; }
+.completa > summary::-webkit-details-marker { display: none; }
+.completa > summary::after { content: "▾"; font-size: 14px; }
+.completa[open] > summary::after { content: "▴"; }
+.completa[open] > summary { margin-bottom: 4px; }
+.analogia { background: color-mix(in srgb, #2563eb 8%, transparent); border-left: 4px solid #2563eb; border-radius: 0 10px 10px 0; padding: 10px 12px; margin: 10px 0 4px; font-size: 15px !important; }
+.fim-resposta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+.botao-fechar, .botao-topo { display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 12px; font-weight: 700; font-size: 15px; text-decoration: none; cursor: pointer; }
+.botao-fechar { border: 0; background: var(--texto); color: var(--fundo); }
+.botao-topo { border: 1px solid var(--borda); background: var(--fundo); color: var(--texto); }
+.topo-flutuante { position: fixed; right: 14px; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 30; display: inline-flex; align-items: center; min-height: 46px; padding: 0 16px;
+  border-radius: 99px; background: var(--texto); color: var(--fundo); font-weight: 800; text-decoration: none; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+.resposta { scroll-margin-top: 10px; }
+
+/* 2022 × 2026: um bloco por comparação. */
+.cmp-legenda { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; color: var(--suave); margin: 4px 0 6px; }
+.cmp-legenda span { font-weight: 800; padding: 2px 8px; border-radius: 99px; font-size: 12px; }
+.cmp-legenda .c26, .cmp-vals .c26 small { background: #ede9fe; color: #5b21b6; }
+.cmp-legenda .c22, .cmp-vals .c22 small { background: var(--borda); color: var(--texto); }
+@media (prefers-color-scheme: dark) { .cmp-legenda .c26, .cmp-vals .c26 small { background: #2e1f5c; color: #c4b5fd; } }
+.cmp-grupo { font-size: 13px !important; text-transform: uppercase; letter-spacing: .06em; color: var(--suave); margin: 16px 0 4px !important; }
+.cmp { padding: 10px 0; border-bottom: 1px solid var(--borda); }
+.cmp-rot { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.cmp-rot small { display: block; font-weight: 400; font-size: 12px; color: var(--suave); }
+.cmp-vals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cmp-vals > div { min-width: 0; background: var(--fundo); border-radius: 10px; padding: 6px 10px; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 6px; }
+.cmp-vals small { font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 99px; }
+.cmp-vals b { font-size: 18px; font-weight: 800; overflow-wrap: anywhere; } /* "3.875 × 3.204" quebra em vez de vazar */
+
+/* Glossário interativo: termos sublinhados no texto e botões no fim; balão ao passar o mouse ou tocar. */
+.termo { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted; text-decoration-thickness: 2px; text-underline-offset: 3px; text-decoration-color: #2563eb; }
+.termo[aria-expanded="true"] { background: color-mix(in srgb, #2563eb 14%, transparent); border-radius: 4px; }
+.balao-def { position: absolute; z-index: 60; max-width: min(320px, calc(100vw - 24px)); background: var(--texto); color: var(--fundo); border-radius: 12px; padding: 10px 12px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.3); font-size: 15px; line-height: 1.45; }
+.balao-def b { display: block; margin-bottom: 2px; }
+.balao-def::before { content: ""; position: absolute; top: -6px; left: var(--seta, 20px); width: 12px; height: 12px; background: inherit; transform: rotate(45deg); }
+.balao-def.acima::before { top: auto; bottom: -6px; }
+.glossario-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.glossario-chips .termo { text-decoration: none; min-height: 44px; padding: 0 14px; border-radius: 99px; border: 1px solid var(--borda); background: var(--fundo); font-weight: 700; font-size: 15px; }
+.glossario-chips .termo::after { content: " ?"; color: #2563eb; }
