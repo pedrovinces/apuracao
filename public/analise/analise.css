@@ -248,3 +248,9 @@ html { scroll-behavior: smooth; }
 .glossario-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .glossario-chips .termo { text-decoration: none; min-height: 44px; padding: 0 14px; border-radius: 99px; border: 1px solid var(--borda); background: var(--fundo); font-weight: 700; font-size: 15px; }
 .glossario-chips .termo::after { content: " ?"; color: #2563eb; }
+
+/* Quadro de ponto em aberto: destaca o que a análise não alcança. */
+.em-aberto { margin: 16px 0 6px; padding: 12px 14px; border-radius: 12px; border: 2px solid #7c3aed; background: color-mix(in srgb, #7c3aed 8%, transparent); }
+.em-aberto h3 { margin-top: 0 !important; color: #6d28d9; }
+@media (prefers-color-scheme: dark) { .em-aberto h3 { color: #c4b5fd; } }
+.em-aberto p { margin: 8px 0 0; }

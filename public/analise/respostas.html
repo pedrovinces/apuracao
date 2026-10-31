@@ -34,6 +34,7 @@
       <a href="#cidades">6. Cidades em que Flávio teve menos votos no 2º turno</a>
       <a href="#integridade">7. O que dizem os testes oficiais das urnas</a>
       <a href="#outros">8. Outras afirmações do relatório (Benford, 72 horas)</a>
+      <a href="#poucas-urnas">9. Urnas com o código de programação alterado decidiriam a eleição?</a>
       <a href="#glossario">Palavras usadas nesta página</a>
     </nav>
   </section>
@@ -168,7 +169,7 @@
     </ol>
     <h3>Onde esta resposta tem limites</h3>
     <ul class="limites">
-      <li><b>O que os dados de resultado não alcançam:</b> uma alteração perfeita e igual em todas as urnas de uma escola não faria nenhuma delas destoar das vizinhas. Esse tipo de hipótese só é testado pelos procedimentos de auditoria (assinatura digital do programa, teste de integridade com urnas sorteadas, boletim impresso afixado em cada seção), descritos no item 7.</li>
+      <li><b>O que os dados de resultado não alcançam:</b> uma alteração perfeita e igual em todas as urnas de uma escola não faria nenhuma delas destoar das vizinhas. Esse tipo de hipótese só é testado pelos procedimentos de auditoria (assinatura digital do programa, teste de integridade com urnas sorteadas, boletim impresso afixado em cada seção), descritos no item 7. O item 9 detalha o que fica em aberto.</li>
       <li>O ajuste do teste de vizinhança é simples (considera os votos dos outros candidatos no 1º turno e a variação do comparecimento). Depois do ajuste ainda sobra uma pequena diferença a favor de Lula em 2026 (cerca de 9 mil votos líquidos), que não explicamos completamente. Pelo tamanho, ela não tem como mudar o resultado, e em 2022 a sobra foi para o lado oposto.</li>
     </ul>
     <p class="confira"><a href="./?aba=vizinhanca">Ver o teste de vizinhança</a><a href="./">Ver o comparativo 1º → 2º turno</a></p>
@@ -193,12 +194,14 @@
       <li><b>As quedas são pequenas.</b> Seção por seção, Flávio teve menos votos em 16,5% das seções, com queda típica de <b>3 votos</b>. Lula teve queda em 1,9% das seções. A diferença entre os dois é esperada: Lula tinha mais espaço para crescer com os votos dos outros candidatos.</li>
       <li><b>Nenhuma queda grande em percentual.</b> A maior queda de Flávio, em percentual, entre as cidades brasileiras foi de 9,1 pontos (Rafael Godeiro, RN). Na cidade típica, ele <b>subiu</b> 0,6 ponto.</li>
       <li><b>Exemplo: Macapá (AP).</b> É a cidade em que Flávio mais perdeu votos: 3.785. Mas 19.220 pessoas a menos foram votar lá no 2º turno.</li>
+      <li><b>Flávio venceu em metade do país.</b> No 2º turno ele venceu em <b>2.695</b> municípios brasileiros (48%; no painel, que inclui as cidades do exterior, aparecem 2.751), que reúnem <b>78,9 milhões</b> de eleitores, metade do eleitorado. Ganhou votos do 1º para o 2º turno em <b>4.624</b> municípios (83%), e em <b>2.566</b> deles venceu e ainda cresceu. A impressão de que ele quase não venceu em lugar nenhum vem de mapas de cidades grandes e de recortes compartilhados, não do conjunto.</li>
+      <li><b>Por que quase todas as viradas foram para um lado só.</b> <b>211</b> municípios brasileiros passaram de Flávio para Lula, e <b>1</b> fez o caminho inverso (no painel, com as cidades do exterior, são 219). Flávio venceu o 1º turno em 2.906 municípios, muitos por pouca diferença. No 2º turno, Lula cresceu em média cerca de 6,6 pontos e Flávio pouco mais de 1, porque os eleitores dos outros candidatos se dividiram de forma desigual. Quando um candidato cresce bem mais que o outro no país inteiro, as cidades que viram, viram quase todas na mesma direção.<p class="analogia"><b>💡 Pense assim:</b> quando a maré sobe, os barcos que encalham são os que estavam na beira da praia; nenhum encalha por estar no fundo. As cidades em que Flávio tinha vencido o 1º turno por pouco eram os barcos na beira.</p></li>
     </ol>
     <h3>Onde esta resposta tem limites</h3>
     <ul class="limites">
       <li>A explicação pela queda do comparecimento vale para a maioria dos casos (728 de 938), mas não para todos. Nas demais cidades, o eleitor que votou em Flávio no 1º turno e em Lula no 2º é uma explicação possível, que os dados (voto secreto) não permitem confirmar caso a caso.</li>
     </ul>
-    <p class="confira"><a href="./?aba=cidades&amp;fcaiu=1&amp;ordem=queda_fv">Cidades em que Flávio perdeu votos</a><a href="./?aba=cidades&amp;fcaiu=1&amp;ordem=queda_fp">Ordenar pela maior queda em %</a></p>
+    <p class="confira"><a href="./?aba=cidades&amp;fcaiu=1&amp;ordem=queda_fv">Cidades em que Flávio perdeu votos</a><a href="./?aba=cidades&amp;venc=22&amp;ordem=maiores">Cidades em que Flávio venceu</a><a href="./?aba=cidades&amp;virada=13">As viradas para Lula</a></p>
         <div class="fim-resposta">
         <button type="button" class="botao-fechar" data-fechar>Fechar resposta ↑</button>
         <a class="botao-topo" href="#topo">Voltar ao topo</a>
@@ -260,6 +263,60 @@
       </div>
     </details>
 </article>
+
+  <article class="resposta" id="poucas-urnas">
+    <h2>9. Urnas com o código de programação alterado decidiriam a eleição?</h2>
+    <blockquote>"Se um número pequeno de urnas, escolhidas ao acaso, tivesse o código de programação alterado para registrar votos de um candidato como sendo do outro, a fraude escaparia dos testes e mudaria o resultado."</blockquote>
+    <p class="veredito parcial">Poucas urnas não mudariam o resultado; uma alteração pequena e espalhada no código fica em aberto nesta análise</p>
+    <p class="curta"><b>Em poucas palavras:</b> para inverter o resultado, seria preciso trocar pelo menos <b>2,2 milhões</b> de votos. Poucas urnas não chegam perto disso, e muitas urnas com trocas grandes deixariam rastros que os dados não mostram. O que os dados de resultado, sozinhos, <b>não conseguem descartar</b> é uma alteração pequena no <b>código de programação</b>, espalhada por grande parte das urnas. Esse ponto depende das auditorias do sistema, que esta análise não examinou.</p>
+    <details class="completa">
+      <summary>Ler a explicação completa</summary>
+    <h3>Passo a passo</h3>
+    <ol>
+      <li><b>Quantos votos teriam de mudar.</b> A vantagem de Lula foi de 4.430.191 votos. Cada voto trocado de um candidato para o outro mexe 2 na diferença (um a menos de um lado, um a mais do outro). Para empatar, seria preciso trocar pelo menos <b>2,2 milhões</b> de votos.</li>
+      <li><b>Quantas urnas isso exige.</b> Cada urna recebeu, em média, 249 votos válidos no 2º turno. Trocando <b>todos</b> os votos de cada urna (algo absurdo, que daria urnas com 100% para um lado), seriam necessárias cerca de <b>8.900 urnas</b>. Trocando 20% dos votos de cada uma, <b>44.500 urnas</b>, quase 9% do país.</li>
+      <li><b>Poucas urnas não bastam.</b> Com 500 urnas, mesmo trocando todos os votos de cada uma, chegaríamos a cerca de 124 mil votos trocados: <b>6% do necessário</b>.<p class="analogia"><b>💡 Pense assim:</b> um funcionário que desvia dinheiro de poucos caixas de uma rede de supermercados talvez escape da auditoria por amostra, mas desvia pouco. Para desviar uma fortuna, ele precisa mexer em tantos caixas que qualquer conferência por sorteio o encontra.</p></li>
+      <li><b>O teste por sorteio.</b> O teste de integridade sorteia algumas centenas de urnas no país e confere, voto a voto, o que foi digitado a partir de cédulas de papel com o que a urna registrou (no TSE, por exemplo, foram 389 votos em duas urnas). A chance de o sorteio encontrar pelo menos uma urna adulterada depende de quantas existam:
+        <div class="tabela-rolagem"><table class="tabela-exata"><thead><tr><th>Urnas adulteradas</th><th>Testando 300</th><th>Testando 600</th></tr></thead><tbody>
+          <tr><th>500 (0,1%)</th><td>26%</td><td>45%</td></tr>
+          <tr><th>2.500 (0,5%)</th><td>78%</td><td>95%</td></tr>
+          <tr><th>5.000 (1%)</th><td>95%</td><td>99,8%</td></tr>
+          <tr><th>44.500 (9%)</th><td>~100%</td><td>~100%</td></tr>
+        </tbody></table></div>
+        Ou seja: poucas urnas adulteradas teriam boa chance de escapar do sorteio, mas não mudariam o resultado; as necessárias para mudar o resultado seriam encontradas com chance próxima de 100%.</li>
+      <li><b>O que a comparação entre vizinhas mostra.</b> Urnas com trocas grandes destoariam das outras seções da mesma escola. O teste de vizinhança (item 5) encontra uma sobra de cerca de 9 mil votos na direção de Lula, longe dos 2,2 milhões, e em 2022 a sobra foi para o lado oposto.</li>
+      <li><b>Acrescentar votos deixaria marca.</b> Cada voto só é aceito depois que um eleitor é habilitado, e o log registra cada voto. Nas 11.584 seções cujos logs lemos, o total de votos nunca passou do número de pessoas que votaram segundo o boletim: bateu exatamente em 11.503, e nas outras 81 o log tinha menos votos (troca de urna ou cédula), nunca mais.</li>
+      <li><b>Os sinais indiretos.</b> Os votos que ficaram livres no 2º turno (9,3 milhões dos outros candidatos e 3 milhões de pessoas a mais votando) bastam para explicar o crescimento de Lula sem nenhuma troca; o desenho do resultado em 2026 se parece com o de 2022; e Flávio ganhou votos em 83% dos municípios.</li>
+    </ol>
+    <div class="em-aberto">
+      <h3>Ponto em aberto: o código de programação das urnas</h3>
+      <p><b>O que é o código de programação.</b> A urna eletrônica é um computador. O que ela faz em cada momento (mostrar a foto do candidato, gravar o voto, somar os votos, imprimir o boletim) está escrito num conjunto de instruções chamado <b>código de programação</b>, ou programa.</p>
+      <p class="analogia"><b>💡 Pense assim:</b> o código é a receita que a urna segue. Uma receita de bolo diz "misture 3 ovos, asse por 40 minutos"; o código da urna diz "quando o eleitor apertar Confirma, grave este voto e some 1 para este candidato". A urna não tem vontade própria: ela faz exatamente o que a receita manda.</p>
+      <p><b>A hipótese.</b> Em tese, um programador consegue escrever uma receita que mande gravar um voto diferente do digitado; isso vale para qualquer computador, não só para a urna. Por isso a segurança do voto eletrônico não se apoia em "confiar no programa", e sim em quatro camadas de controle, todas desenhadas para que uma receita adulterada fosse percebida:</p>
+      <ol>
+        <li><b>Inspeção do código.</b> Meses antes da eleição, o código fica aberto para ser lido, linha por linha, por partidos, universidades, Polícia Federal, OAB, Ministério Público e outras entidades.<p class="analogia"><b>💡 Pense assim:</b> é como um concurso de culinária em que a receita oficial é entregue antes a chefs de vários restaurantes concorrentes, para que procurem qualquer ingrediente estranho.</p></li>
+        <li><b>Assinatura digital.</b> Depois de inspecionado, o programa recebe uma assinatura digital, uma espécie de impressão digital do arquivo. Mudar uma única letra do programa muda essa impressão digital, e a diferença pode ser conferida nas urnas, inclusive pelos fiscais.<p class="analogia"><b>💡 Pense assim:</b> é o lacre de um remédio. Se alguém abrir a caixa e trocar um comprimido, o lacre rompido denuncia, mesmo que a caixa pareça igual.</p></li>
+        <li><b>Teste de integridade.</b> No dia da eleição, urnas sorteadas são retiradas das seções e recebem votos de cédulas de papel já preenchidas, diante de fiscais e câmeras. No fim, o resultado da urna é comparado com as cédulas.<p class="analogia"><b>💡 Pense assim:</b> é o fiscal que confere uma bomba de combustível enchendo um galão de volume conhecido. Se a bomba marcasse a mais, o galão mostraria.</p></li>
+        <li><b>Boletim impresso.</b> Ao fim da votação, cada urna imprime o resultado da seção, que fica afixado no local e é fotografado pelos fiscais, para comparar com o que o TSE publica.<p class="analogia"><b>💡 Pense assim:</b> é o recibo do caixa eletrônico, que você guarda para conferir com o extrato do banco.</p></li>
+      </ol>
+      <p><b>Por que os dados de resultado não alcançam esse caso.</b> Uma alteração no código que trocasse uma parte pequena dos votos em quase todas as urnas faria todas mudarem um pouco ao mesmo tempo. Nenhuma destoaria das vizinhas, e o resultado ficaria parecido com uma mudança real de voto entre os turnos.</p>
+      <p class="analogia"><b>💡 Pense assim:</b> se todas as balanças de todos os mercados de uma cidade pesassem 2% a mais, comparar um mercado com outro não revelaria nada, porque todos erram igual. Para descobrir, é preciso pesar um peso conhecido, de exatamente 1 quilo, numa balança sorteada. Na eleição, esse "peso conhecido" são as cédulas de papel do teste de integridade.</p>
+      <p><b>O que fica em aberto.</b> <b>Os dados de resultado usados nesta página não conseguem confirmar nem descartar uma alteração desse tipo no código de programação.</b> O que eles mostram é que não há neles nenhum sinal que exija essa explicação: os votos que ficaram livres no 2º turno bastam para explicar o crescimento de Lula, e o desenho do resultado se parece com o de 2022. E, segundo as notícias oficiais, os testes de integridade não encontraram divergência.</p>
+      <p><b>O que esta análise não fez.</b> Não examinamos o código de programação das urnas nem os relatórios completos das auditorias. Quem quiser investigar essa hipótese precisa desses documentos: os relatórios do teste de integridade de 2026 e o resultado da inspeção do código pelas entidades fiscalizadoras, que podem ser pedidos ao TSE, inclusive por meio de um partido.</p>
+    </div>
+    <h3>Onde esta resposta tem limites</h3>
+    <ul class="limites">
+      <li>As probabilidades da tabela são ilustrativas: não encontramos o total nacional de urnas testadas em 2026 (as notícias falam de 20 a 33 por estado).</li>
+      <li>Os números do teste de integridade vêm de notícias oficiais encontradas em busca; os sites da Justiça Eleitoral bloquearam a leitura automática, então confira nos links do item 7.</li>
+      <li>Como dito no ponto em aberto, esta página trata dos resultados das urnas, não do funcionamento interno delas nem do código de programação.</li>
+    </ul>
+    <p class="confira"><a href="./?aba=vizinhanca">Ver o teste de vizinhança</a><a href="#integridade">Ver os testes oficiais (item 7)</a></p>
+      <div class="fim-resposta">
+        <button type="button" class="botao-fechar" data-fechar>Fechar resposta ↑</button>
+        <a class="botao-topo" href="#topo">Voltar ao topo</a>
+      </div>
+    </details>
+  </article>
 
   <section class="resposta" id="glossario">
     <h2>Palavras usadas nesta página</h2>
