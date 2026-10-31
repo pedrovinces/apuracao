@@ -96,6 +96,8 @@ def faixa(en):
     return str(max(16 * 60 + 30, min(m, 20 * 60)))
 
 br, regs, ufs = novo(), collections.defaultdict(novo), collections.defaultdict(novo)
+CIDADES = []          # uma linha por município do país (aba Cidades)
+EXTREMAS = []         # seções candidatas a extremo nacional (queda de Flávio / ganho de margem de Lula)
 cand1 = collections.Counter()
 sim = collections.defaultdict(lambda: collections.defaultdict(collections.Counter))  # uf -> faixa -> somas
 amostra_fila = []  # votos pós-17h por seção da amostra 17:00–17:15
@@ -148,7 +150,16 @@ for uf in todas_ufs:
             if v1 and v2:
                 dm = 100 * (b13 - b22) / v2 - 100 * (a13 - a22) / v1
                 destaques[uf]['variacao'].append([mun, zona, sec, round(dm, 2)])
+                # Extremos nacionais: guarda o essencial para comparar sem abrir o município.
+                EXTREMAS.append([uf, mun, zona, sec, a13, a22, votos(s1)[2], s1['comp'], b13, b22, s2['comp'], round(dm, 2), int(s1['agr'] != s2['agr'])])
     # Arquivos do município (seções) e da UF (municípios + destaques).
+    # Cidades: [uf, cd, nome, ibge, aptos1, comp1, lula1, flavio1, outros1, brnu1, aptos2, comp2, lula2, flavio2, brnu2]
+    for m, ag in municipios.items():
+        t1, t2 = ag['t1'], ag['t2']
+        if not t1 or not t2: continue
+        info = MUN.get((uf, m), {})
+        CIDADES.append([uf, m, info.get('nome'), info.get('ibge'), t1['apt'], t1['comp'], t1['13'], t1['22'], t1['out'], t1['br'] + t1['nu'],
+                        t2['apt'], t2['comp'], t2['13'], t2['22'], t2['br'] + t2['nu']])
     (saida / 'mun' / uf).mkdir(parents=True, exist_ok=True)
     for mun, linhas in secoes_mun.items():
         json.dump({'uf': uf, 'cd': mun, 'nome': MUN.get((uf, mun), {}).get('nome'), 'secoes': linhas},
@@ -175,6 +186,18 @@ contados = sum(c['pos17'] for u in sim.values() for c in u.values())
 
 CAMPOS_SECAO = ['zona', 'secao', 't1', 't2', 'abertura_min', 'encerramento_min', 'votos_pos17', 'ultimo_voto_min', 'log_parcial']
 CAMPOS_TURNO = ['aptos', 'comparecimento', 'v13', 'v22', 'outros', 'brancos', 'nulos', 'local', 'agregadas']
+json.dump({'campos': ['uf', 'cd', 'nome', 'ibge', 'aptos1', 'comp1', 'lula1', 'flavio1', 'outros1', 'brnu1', 'aptos2', 'comp2', 'lula2', 'flavio2', 'brnu2'], 'cidades': CIDADES},
+          open(saida / 'cidades.json', 'w'), ensure_ascii=False, separators=(',', ':'))
+# Seções extremas do país: as 300 maiores quedas de Flávio em votos e as 300 maiores
+# variações de margem para cada lado (seções com pelo menos 50 votantes nos dois turnos).
+campos_ext = ['uf', 'mun', 'zona', 'secao', 'lula1', 'flavio1', 'outros1', 'comp1', 'lula2', 'flavio2', 'comp2', 'dmargem', 'agregacao_mudou']
+json.dump({'campos': campos_ext,
+           'queda_flavio': sorted(EXTREMAS, key=lambda x: x[9] - x[5])[:300],
+           'queda_lula': sorted(EXTREMAS, key=lambda x: x[8] - x[4])[:300],
+           'margem_lula': sorted(EXTREMAS, key=lambda x: -x[11])[:300],
+           'margem_flavio': sorted(EXTREMAS, key=lambda x: x[11])[:300],
+           'nomes': {f'{uf}|{m}': v['nome'] for (uf, m), v in MUN.items()}},
+          open(saida / 'secoes_extremas.json', 'w'), ensure_ascii=False, separators=(',', ':'))
 json.dump({
     'gerado': datetime.datetime.now().strftime('%Y-%m-%d %H:%M'),
     'campos_secao': CAMPOS_SECAO, 'campos_turno': CAMPOS_TURNO,

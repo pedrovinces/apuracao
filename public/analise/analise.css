@@ -119,3 +119,19 @@
 .metodo li { margin-bottom: 6px; }
 .filtro-zona { display: flex; align-items: center; gap: 8px; font-size: 14px; margin: 8px 0 4px; }
 .filtro-zona select { min-height: 40px; border-radius: 10px; border: 1px solid var(--borda); background: var(--fundo); padding: 0 8px; font-size: 15px; color: var(--texto); }
+
+.filtros-cidades .filtro { display: block; margin: 12px 0 0; }
+.filtro > span { display: block; font-size: 13px; color: var(--suave); margin-bottom: 4px; }
+.filtro input[type=range] { width: 100%; accent-color: var(--texto); min-height: 32px; }
+.filtro.duas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.filtro select, #ext-tipo { width: 100%; min-height: 44px; border-radius: 10px; border: 1px solid var(--borda); background: var(--fundo); padding: 0 8px; font-size: 14px; color: var(--texto); }
+.segmentado.mini { display: flex; background: var(--borda); border-radius: 10px; padding: 3px; }
+.segmentado.mini button { flex: 1; min-height: 40px; border: 0; border-radius: 8px; background: transparent; font-weight: 600; font-size: 13px; cursor: pointer; color: var(--texto); }
+.segmentado.mini button[aria-pressed="true"] { background: var(--cartao); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.chip[data-fc][aria-pressed="true"] { background: var(--texto); border-color: var(--texto); color: var(--fundo); text-decoration: none; }
+#limpar-fc { margin-top: 12px; }
+.linha-cidade { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--borda); background: none; padding: 10px 2px; cursor: pointer; color: var(--texto); font: inherit; }
+.lc-nome { display: block; font-weight: 700; font-size: 15px; }
+.lc-nome small { font-weight: 500; color: var(--suave); }
+.lc-l { display: block; font-size: 13px; margin-top: 2px; }
+.lc-l small { color: var(--suave); }

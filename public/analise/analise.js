@@ -67,7 +67,7 @@ const aggUf = (uf) => R.ufs[uf];
 // ---------- estado da navegação (refletido no endereço) ----------
 const P = new URLSearchParams(location.search);
 const est = {
-  aba: ['turnos', 'horario', 'simulador'].includes(P.get('aba')) ? P.get('aba') : 'turnos',
+  aba: ['turnos', 'horario', 'cidades', 'simulador'].includes(P.get('aba')) ? P.get('aba') : 'turnos',
   regiao: REGIOES[P.get('regiao')] ? P.get('regiao') : null,
   uf: NOME_UF[(P.get('uf') || '').toUpperCase()] ? P.get('uf').toUpperCase() : null,
   mun: P.get('mun') ? Number(P.get('mun')) : null,
@@ -79,7 +79,8 @@ const regiaoDaUf = (uf) => Object.keys(REGIOES).find((r) => REGIOES[r].includes(
 function irPara(n) {
   if (n.mun !== est.mun) { est.filtroZona = null; est.limiteSecoes = 300; }
   Object.assign(est, { regiao: null, uf: null, mun: null, zona: null, secao: null }, n);
-  if (est.uf && !est.regiao) est.regiao = regiaoDaUf(est.uf);
+  if (est.uf && !est.regiao && est.uf !== 'ZZ') est.regiao = regiaoDaUf(est.uf);
+  if (est.uf === 'ZZ') est.regiao = null; // exterior não tem região: evita "Exterior › Exterior" na trilha
   const p = new URLSearchParams();
   if (est.aba !== 'turnos') p.set('aba', est.aba);
   if (est.regiao && !est.uf) p.set('regiao', est.regiao);
@@ -396,6 +397,130 @@ function graficoResultado() {
   eixoHora(svg, x, H - m.b);
 }
 
+// ---------- aba: cidades (filtros e extremos) ----------
+let cidades = null, extremas = null;
+const fc = { venc: 'todos', virada: 'todas', fCaiu: false, lCaiu: false, dfMax: 40, dlMin: -40, minEl: 0, ordem: 'queda_fv', limite: 150, eixo: 'outros' };
+function prepCidades(d) {
+  return d.cidades.map(([uf, cd, nome, ibge, apt1, comp1, l1, f1, o1, bn1, apt2, comp2, l2, f2, bn2]) => {
+    const v1 = l1 + f1 + o1, v2 = l2 + f2;
+    const pl1 = v1 ? (100 * l1) / v1 : 0, pf1 = v1 ? (100 * f1) / v1 : 0, po1 = v1 ? (100 * o1) / v1 : 0;
+    const pl2 = v2 ? (100 * l2) / v2 : 0, pf2 = v2 ? (100 * f2) / v2 : 0;
+    return { uf, cd, nome: titulo(nome), apt2, l1, f1, o1, l2, f2, comp1, comp2, pl1, pf1, po1, pl2, pf2,
+      dl: pl2 - pl1, df: pf2 - pf1, dm: (pl2 - pf2) - (pl1 - pf1), dLv: l2 - l1, dFv: f2 - f1, dC: comp2 - comp1,
+      v1w: l1 >= f1 ? '13' : '22', v2w: l2 >= f2 ? '13' : '22', dabst: (comp1 ? (100 * (comp2 - comp1)) / comp1 : 0) };
+  });
+}
+function filtrar() {
+  const escopo = est.uf ? (c) => c.uf === est.uf : est.regiao ? (c) => (REGIOES[est.regiao] || ['ZZ']).includes(c.uf) : () => true;
+  const l = cidades.filter((c) => escopo(c)
+    && (fc.venc === 'todos' || c.v2w === fc.venc)
+    && (fc.virada === 'todas' || (fc.virada === '13' ? c.v1w === '22' && c.v2w === '13' : c.v1w === '13' && c.v2w === '22'))
+    && (!fc.fCaiu || c.dFv < 0) && (!fc.lCaiu || c.dLv < 0)
+    && c.df <= fc.dfMax && c.dl >= fc.dlMin && c.apt2 >= fc.minEl);
+  const ord = { queda_fv: (c) => c.dFv, queda_fp: (c) => c.df, ganho_lp: (c) => -c.dl, margem_l: (c) => -c.dm, margem_f: (c) => c.dm, maiores: (c) => -c.apt2, queda_lv: (c) => c.dLv }[fc.ordem];
+  return l.sort((a, b) => ord(a) - ord(b));
+}
+async function abaCidades() {
+  if (!cidades) cidades = prepCidades(await json('dados/cidades.json?v=dev'));
+  const seg = (nome, atual, op) => `<div class="segmentado mini" role="group">${op.map(([v, t]) => `<button type="button" data-fc="${nome}" data-v="${v}" aria-pressed="${String(atual) === v}">${t}</button>`).join('')}</div>`;
+  $('#conteudo').innerHTML = `<section class="cartao filtros-cidades"><h2>Comparar cidades</h2>
+      <p class="nota-pequena">Escolha o recorte no seletor acima (Brasil, região ou estado) e combine os filtros. Toque numa cidade para abrir as seções dela.</p>
+      <div class="filtro"><span>Venceu no 2º turno</span>${seg('venc', fc.venc, [['todos', 'Todos'], ['13', 'Lula'], ['22', 'Flávio']])}</div>
+      <div class="filtro"><span>Virada entre turnos</span>${seg('virada', fc.virada, [['todas', 'Todas'], ['13', 'Virou para Lula'], ['22', 'Virou para Flávio']])}</div>
+      <div class="filtro"><span>Perdeu votos do 1º para o 2º</span><div class="chips">
+        <button type="button" class="chip" data-fc="fCaiu" aria-pressed="${fc.fCaiu}">Flávio teve menos votos</button>
+        <button type="button" class="chip" data-fc="lCaiu" aria-pressed="${fc.lCaiu}">Lula teve menos votos</button></div></div>
+      <label class="filtro"><span>Variação de Flávio de no máximo <b id="dfmax-t"></b></span><input type="range" id="dfmax" min="-40" max="40" step="1" value="${fc.dfMax}"></label>
+      <label class="filtro"><span>Variação de Lula de pelo menos <b id="dlmin-t"></b></span><input type="range" id="dlmin" min="-40" max="60" step="1" value="${fc.dlMin}"></label>
+      <div class="filtro duas"><label><span>Eleitores (mínimo)</span><select id="minel">${[[0, 'qualquer'], [1000, '1 mil'], [10000, '10 mil'], [100000, '100 mil'], [1000000, '1 milhão']].map(([v, t]) => `<option value="${v}"${fc.minEl === v ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
+        <label><span>Ordenar por</span><select id="ordem">${[['queda_fv', 'Maior queda de Flávio (votos)'], ['queda_fp', 'Maior queda de Flávio (p.p.)'], ['ganho_lp', 'Maior ganho de Lula (p.p.)'], ['margem_l', 'Margem andou mais para Lula'], ['margem_f', 'Margem andou mais para Flávio'], ['queda_lv', 'Maior queda de Lula (votos)'], ['maiores', 'Mais eleitores']].map(([v, t]) => `<option value="${v}"${fc.ordem === v ? ' selected' : ''}>${t}</option>`).join('')}</select></label></div>
+      <button type="button" class="botao-leve" id="limpar-fc">Limpar filtros</button>
+    </section>
+    <section class="cartao" id="cid-resumo"></section>
+    <section class="cartao"><h2>Cada cidade é um ponto</h2>
+      <div class="filtro"><span>Eixo horizontal</span>${seg('eixo', fc.eixo, [['outros', 'Outros candidatos no 1º'], ['abst', 'Variação do comparecimento']])}</div>
+      <div id="g-cidades" class="grafico"></div>
+      <p class="nota-pequena" id="g-cidades-nota"></p></section>
+    <section class="cartao" id="cid-lista"></section>
+    <section class="cartao" id="sec-extremas"></section>`;
+  ligarFiltrosCidades(); atualizarCidades(); await secoesExtremas();
+}
+function ligarFiltrosCidades() {
+  const atual = () => { $('#dfmax-t').textContent = fc.dfMax >= 40 ? 'qualquer' : pp(fc.dfMax); $('#dlmin-t').textContent = fc.dlMin <= -40 ? 'qualquer' : pp(fc.dlMin); };
+  atual();
+  document.querySelectorAll('[data-fc]').forEach((b) => (b.onclick = () => {
+    const k = b.dataset.fc;
+    if (b.dataset.v !== undefined) { fc[k] = b.dataset.v; b.parentElement.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); }
+    else { fc[k] = !fc[k]; b.setAttribute('aria-pressed', String(fc[k])); }
+    fc.limite = 150; k === 'eixo' ? graficoCidades(filtrar()) : atualizarCidades();
+  }));
+  $('#dfmax').oninput = (e) => { fc.dfMax = +e.target.value; atual(); atualizarCidades(); };
+  $('#dlmin').oninput = (e) => { fc.dlMin = +e.target.value; atual(); atualizarCidades(); };
+  $('#minel').onchange = (e) => { fc.minEl = +e.target.value; atualizarCidades(); };
+  $('#ordem').onchange = (e) => { fc.ordem = e.target.value; atualizarCidades(); };
+  $('#limpar-fc').onclick = () => { Object.assign(fc, { venc: 'todos', virada: 'todas', fCaiu: false, lCaiu: false, dfMax: 40, dlMin: -40, minEl: 0, limite: 150 }); abaCidades(); };
+}
+function atualizarCidades() {
+  const l = filtrar();
+  const s = l.reduce((a, c) => { a.l1 += c.l1; a.f1 += c.f1; a.o1 += c.o1; a.l2 += c.l2; a.f2 += c.f2; a.c1 += c.comp1; a.c2 += c.comp2; a.apt += c.apt2; a.compCaiu += c.dC < 0; return a; }, { l1: 0, f1: 0, o1: 0, l2: 0, f2: 0, c1: 0, c2: 0, apt: 0, compCaiu: 0 });
+  $('#cid-resumo').innerHTML = `<h2>${fmt.format(l.length)} ${l.length === 1 ? 'cidade' : 'cidades'} no filtro</h2>
+    <ul class="saldos">
+      <li><i class="ponto" style="background:${COR[22]}"></i><span>Flávio</span><b>${fmt.format(s.f1)} → ${fmt.format(s.f2)}</b><small>saldo ${sinal(s.f2 - s.f1)}</small></li>
+      <li><i class="ponto" style="background:${COR[13]}"></i><span>Lula</span><b>${fmt.format(s.l1)} → ${fmt.format(s.l2)}</b><small>saldo ${sinal(s.l2 - s.l1)}</small></li>
+      <li><i class="ponto" style="background:${COR.out}"></i><span>Outros candidatos no 1º turno</span><b>${fmt.format(s.o1)}</b></li>
+      <li><i class="ponto" style="background:${COR.abst}"></i><span>Compareceram</span><b>${fmt.format(s.c1)} → ${fmt.format(s.c2)}</b><small>comparecimento caiu em ${fmt.format(s.compCaiu)} dessas cidades</small></li>
+    </ul>`;
+  const lista = l.slice(0, fc.limite);
+  $('#cid-lista').innerHTML = `<h2>Cidades</h2>${lista.map((c) => `<button type="button" class="linha-cidade" data-ir='${JSON.stringify({ uf: c.uf, mun: c.cd })}'>
+      <span class="lc-nome">${esc(c.nome)} <small>${c.uf}${c.v1w !== c.v2w ? ` · virou para ${c.v2w === '13' ? 'Lula' : 'Flávio'}` : ''}</small></span>
+      <span class="lc-l t22">Flávio ${fmt.format(c.f1)} → ${fmt.format(c.f2)} <b>${sinal(c.dFv)}</b> <small>${pp(c.df)}</small></span>
+      <span class="lc-l t13">Lula ${fmt.format(c.l1)} → ${fmt.format(c.l2)} <b>${sinal(c.dLv)}</b> <small>${pp(c.dl)}</small></span>
+      <span class="lc-l sem">outros no 1º: ${fmt.format(c.o1)} · comparecimento ${sinal(c.dC)}</span></button>`).join('') || '<p class="nota-pequena">Nenhuma cidade com esses filtros.</p>'}
+    ${l.length > fc.limite ? `<button type="button" class="botao-leve largo" id="mais-cid">Mostrar mais (${fmt.format(l.length - fc.limite)})</button>` : ''}`;
+  $('#mais-cid')?.addEventListener('click', () => { fc.limite += 150; atualizarCidades(); });
+  graficoCidades(l);
+}
+// Dispersão: no eixo horizontal, a parcela dos outros candidatos no 1º turno (ou a variação
+// do comparecimento); no vertical, a variação da margem. Cidades do filtro em cor, demais em cinza.
+function graficoCidades(filtradas) {
+  const el = $('#g-cidades'); if (!el) return;
+  el.innerHTML = '';
+  const sel = new Set(filtradas.map((c) => c.uf + c.cd));
+  const base = cidades.filter((c) => c.uf !== 'ZZ' && c.apt2 >= 500);
+  const xv = fc.eixo === 'outros' ? (c) => c.po1 : (c) => Math.max(-30, Math.min(30, c.dabst));
+  const W = el.clientWidth || 340, H = 260, m = { t: 10, r: 10, b: 32, l: 40 };
+  const x = d3.scaleLinear().domain(fc.eixo === 'outros' ? [0, d3.max(base, xv) || 30] : [-30, 30]).nice().range([m.l, W - m.r]);
+  const y = d3.scaleLinear().domain([-25, 45]).range([H - m.b, m.t]).clamp(true);
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('class', 'svg-grafico');
+  svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(5).tickFormat((v) => v + '%')).call((s) => s.selectAll('text').attr('font-size', 10));
+  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickFormat((v) => (v > 0 ? '+' : '') + v)).call((s) => s.selectAll('text').attr('font-size', 10));
+  svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'currentColor').attr('opacity', 0.35);
+  const ord = base.slice().sort((a, b) => sel.has(a.uf + a.cd) - sel.has(b.uf + b.cd));
+  svg.append('g').selectAll('circle').data(ord).join('circle').attr('cx', (c) => x(xv(c))).attr('cy', (c) => y(c.dm))
+    .attr('r', (c) => Math.max(1.2, Math.min(7, Math.sqrt(c.apt2) / 60)))
+    .attr('fill', (c) => (sel.has(c.uf + c.cd) ? COR[c.v2w] : 'var(--borda)')).attr('opacity', (c) => (sel.has(c.uf + c.cd) ? 0.7 : 0.5))
+    .append('title').text((c) => `${c.nome}/${c.uf}: margem ${pp(c.dm)}; outros no 1º ${pct(c.po1)}`);
+  // Correlação simples entre os eixos (todas as cidades com 500+ eleitores).
+  const xs = base.map(xv), ys = base.map((c) => c.dm), mx = d3.mean(xs), my = d3.mean(ys);
+  const r = d3.sum(xs.map((v, i) => (v - mx) * (ys[i] - my))) / Math.sqrt(d3.sum(xs.map((v) => (v - mx) ** 2)) * d3.sum(ys.map((v) => (v - my) ** 2)));
+  $('#g-cidades-nota').textContent = `Vertical: variação da margem Lula − Flávio (p.p.). Horizontal: ${fc.eixo === 'outros' ? 'votos dos outros candidatos no 1º turno (% dos válidos)' : 'variação do comparecimento entre turnos (%)'}. Correlação entre os dois eixos: r = ${r.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}. Cidades com 500 eleitores ou mais; em cor, as do filtro (cor de quem venceu no 2º turno).`;
+}
+async function secoesExtremas() {
+  if (!extremas) extremas = await json('dados/secoes_extremas.json?v=dev');
+  const tipo = est.extTipo || 'queda_flavio';
+  const noEscopo = (l) => (est.uf ? l[0] === est.uf : est.regiao ? (REGIOES[est.regiao] || []).includes(l[0]) : true);
+  const linhas = extremas[tipo].filter(noEscopo).slice(0, 60);
+  $('#sec-extremas').innerHTML = `<h2>Seções mais extremas do país</h2>
+    <label class="filtro"><span class="visualmente-oculto">Tipo</span><select id="ext-tipo">${[['queda_flavio', 'Maiores quedas de Flávio (votos)'], ['margem_lula', 'Margem andou mais para Lula'], ['queda_lula', 'Maiores quedas de Lula (votos)'], ['margem_flavio', 'Margem andou mais para Flávio']].map(([v, t]) => `<option value="${v}"${v === tipo ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
+    <p class="nota-pequena">Seções com pelo menos 50 votantes nos dois turnos. ⚠ = a agregação de seções mudou entre os turnos (os eleitores não são os mesmos). ${est.uf || est.regiao ? 'Filtrado pelo recorte escolhido, entre as 300 mais extremas do país.' : ''}</p>
+    ${linhas.map(([uf, mun, z, s, l1, f1, o1, c1, l2, f2, c2, dm, agr]) => `<button type="button" class="linha-cidade" data-ir='${JSON.stringify({ uf, mun, zona: z, secao: s })}'>
+      <span class="lc-nome">${esc(titulo(extremas.nomes[`${uf}|${mun}`]))} <small>${uf} · zona ${z} · seção ${s}${agr ? ' ⚠' : ''}</small></span>
+      <span class="lc-l t22">Flávio ${fmt.format(f1)} → ${fmt.format(f2)} <b>${sinal(f2 - f1)}</b></span>
+      <span class="lc-l t13">Lula ${fmt.format(l1)} → ${fmt.format(l2)} <b>${sinal(l2 - l1)}</b></span>
+      <span class="lc-l sem">outros no 1º: ${fmt.format(o1)} · votaram ${fmt.format(c1)} → ${fmt.format(c2)} · margem ${pp(dm)}</span></button>`).join('') || '<p class="nota-pequena">Nenhuma seção deste recorte entre as mais extremas do país.</p>'}`;
+  $('#ext-tipo').onchange = (e) => { est.extTipo = e.target.value; secoesExtremas(); };
+}
+
 // ---------- aba 3: simulador ----------
 const sim = { limite: 20 * 60, hipotese: 'manter', fora: new Set() };
 function abaSimulador() {
@@ -470,6 +595,7 @@ async function desenhar() {
   try {
     if (est.aba === 'turnos') await abaTurnos();
     else if (est.aba === 'horario') await abaHorario();
+    else if (est.aba === 'cidades') await abaCidades();
     else abaSimulador();
   } catch (e) {
     $('#conteudo').innerHTML = `<div class="aviso erro">Não foi possível carregar estes dados (${esc(e.message)}).</div>`;
