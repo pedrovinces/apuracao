@@ -50,3 +50,25 @@ npm run serve        # http://localhost:8080/?demo=1
 npm test             # Playwright em 1280x900 e 390x844
 npm run geo          # regenera public/geo/brasil.topo.json
 ```
+
+## Análise 1º × 2º turno (`/analise`)
+
+Página estática com a comparação seção por seção entre os turnos, as urnas encerradas após as 17h
+(prorrogação até 19h) e um simulador de cenários. Os dados em `public/analise/dados/` são gerados
+uma vez, a partir de arquivos públicos do TSE, por três scripts:
+
+```sh
+# 1. Boletins de urna (dados abertos), apenas Presidente, um JSON por UF e turno
+python tools/analise/extrair_bweb.py links.txt compact        # links.txt: URLs bweb_1t_*/bweb_2t_*
+# 2. Logs das urnas do 2º turno: votos depois das 17h (todas as seções fechadas após 17:15
+#    e amostra aleatória, semente 20261025, das fechadas entre 17:00 e 17:15)
+python tools/analise/logs_pos17.py compact logs_t2.json 2500
+# 3. Junta tudo e grava resumo, UFs e municípios
+python tools/analise/montar.py compact logs_t2.json mun-e006258-cm.json public/analise/dados br-c0001-e006257-u.json
+```
+
+- Boletins: `https://dadosabertos.tse.jus.br/dataset/resultados-2026-boletim-de-urna`.
+- Logs: `resultados.tse.jus.br/oficial/ele2026/arquivo-urna/3221/dados/<uf>/<mun>/<zona>/<secao>/…-aux.json`
+  (pleito 3220 = 1º turno, 3221 = 2º turno). Do log só saem contagens; dados de mesários não são guardados.
+- Horários convertidos para Brasília pela hora local de abertura (todas as urnas abrem às 8h de Brasília).
+- O voto é secreto: o log mostra quantos votaram em cada horário, nunca em quem.

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Análise 1º e 2º turno</title>
+<meta name="description" content="Comparação seção por seção entre o 1º e o 2º turno presidencial de 2026, urnas encerradas após as 17h e simulador de cenários, com os boletins e logs públicos do TSE.">
+<meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='16' height='32' fill='%23c81e1e'/%3E%3Crect x='16' width='16' height='32' fill='%231d4ed8'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../estilo.css?v=dev">
+<link rel="stylesheet" href="analise.css?v=dev">
+</head>
+<body class="pagina-analise">
+<header class="topo">
+  <div class="titulo">
+    <h1>Análise <span>1º e 2º turno · Presidente · 2026</span></h1>
+    <a class="pilula" href="../">← Painel</a>
+  </div>
+</header>
+
+<nav class="trilha" id="trilha" aria-label="Onde você está"></nav>
+
+<div class="seletores">
+  <label class="seletor-uf"><span class="visualmente-oculto">Local</span><select id="local"></select></label>
+  <label class="busca" id="busca-rotulo" hidden><span class="visualmente-oculto">Buscar município</span>
+    <input id="busca" type="search" list="lista-mun" placeholder="Buscar município…" autocomplete="off"><datalist id="lista-mun"></datalist>
+  </label>
+</div>
+
+<nav class="abas" role="tablist" aria-label="Análises">
+  <button type="button" role="tab" data-aba="turnos" aria-selected="true">1º → 2º turno</button>
+  <button type="button" role="tab" data-aba="horario" aria-selected="false">Urnas após 17h</button>
+  <button type="button" role="tab" data-aba="simulador" aria-selected="false">Simulador</button>
+</nav>
+
+<main id="conteudo" aria-live="polite"><p class="carregando">Carregando os dados do TSE…</p></main>
+
+<footer class="rodape">
+  <p>Fontes: boletins de urna dos dois turnos (dados abertos do TSE, arquivos <code>bweb</code>) e logs das urnas do 2º turno (arquivo-urna em resultados.tse.jus.br). Horários convertidos para Brasília. Malha municipal: IBGE.</p>
+  <p>O voto é secreto: nenhum dado público liga um voto a um horário ou a um eleitor. O log diz <em>quantas</em> pessoas votaram em cada horário; o boletim diz o total de cada candidato na seção. Os scripts que geram estes dados estão em <code>tools/analise/</code> no repositório, para qualquer pessoa refazer a conta.</p>
+  <details class="metodo"><summary>Como estes números foram feitos</summary>
+    <ul>
+      <li><b>Votos por seção:</b> boletins de urna dos dois turnos publicados pelo TSE em dados abertos (arquivos <code>bweb_1t_UF</code> e <code>bweb_2t_UF</code>), apenas o cargo de Presidente. As seções são comparadas pela chave município + zona + seção.</li>
+      <li><b>Horários:</b> abertura e encerramento vêm do boletim, na hora local da urna. Como todas as urnas abrem às 8h de Brasília, a diferença de fuso de cada município é a hora local de abertura mais comum ali menos 8. Assim AC (+2 h), AM, MT, MS, RO e RR (+1 h) e Fernando de Noronha (−1 h) são convertidos para Brasília.</li>
+      <li><b>Votos depois das 17h:</b> contados no log de cada urna (arquivo público do TSE), linha "O voto do eleitor foi computado" com horário depois das 17:00:00 de Brasília. Lemos o log de todas as seções que fecharam depois das 17:15 e de uma amostra aleatória (semente fixa 20261025) das que fecharam entre 17:00 e 17:15; para esse grupo o total é estimado pela média da amostra, com intervalo de 95%.</li>
+      <li><b>Voto secreto:</b> o log registra que um voto foi computado e a hora, nunca o candidato. O registro digital do voto embaralha os votos sem horário. Por isso nenhum dado diz em quem votaram as pessoas depois das 17h; os cenários do simulador usam hipóteses extremas para mostrar o efeito máximo possível.</li>
+      <li><b>Cuidados na comparação entre turnos:</b> seções podem ser agregadas de forma diferente em cada turno, mudar de local ou existir em um turno só; elas aparecem marcadas. Percentuais são sobre votos válidos de cada turno.</li>
+      <li><b>Dados pessoais:</b> os logs trazem dados de mesários (como o título digitado no encerramento); nada disso é guardado ou publicado, só contagens.</li>
+    </ul>
+  </details>
+  <p id="gerado"></p>
+</footer>
+
+<div id="dica" class="dica" role="tooltip" hidden></div>
+<script src="../vendor/d3.min.js?v=dev"></script>
+<script src="../vendor/topojson-client.min.js?v=dev"></script>
+<script type="module" src="analise.js?v=dev"></script>
+</body>
+</html>
