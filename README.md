@@ -83,7 +83,16 @@ python tools/analise/extrair_biometria.py <pasta com bweb_2t_*.zip> bio 2
 python tools/analise/extrair_bweb.py links2022.txt compact2022
 # biometria, horário x resultado, seções extremas e teste de vizinhança (2026 e 2022)
 python tools/analise/estudos.py compact bio compact2022 public/analise/dados/estudos.json
+# lacre eletrônico (assinatura digital) de 300 urnas sorteadas por turno + as 100 mais destoantes da vizinhança
+# bu.asn1: especificação oficial do TSE (pacote formato-arquivos-bu-rdv-ass-digital-v2); requer asn1tools e cryptography
+python tools/analise/assinaturas.py compact spec/bu.asn1 public/analise/dados/assinaturas.json 300 public/analise/dados/estudos.json
 ```
+
+- Assinaturas: `tools/analise/assinaturas.py` confere, para cada urna, o SHA-512 do boletim (bu.dat) contra o
+  vota.vsc, a assinatura de hardware da urna (Ed521 em `tools/analise/ed521.py`, ECDSA P-521 via cryptography),
+  o certificado da urna contra as autoridades das urnas (`tools/analise/certs_urna_tse.pem`) e os votos de
+  Presidente dentro do bu.dat contra os dados abertos. Controle negativo: o mesmo lacre com 1 bit trocado tem de
+  ser recusado. A assinatura de software (CEPESC, algoritmo não publicado) não é conferida.
 
 - `public/analise/respostas.html`: as afirmações sobre o 2º turno conferidas com esses dados, em linguagem simples,
   com links para cada número no painel.

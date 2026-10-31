@@ -254,3 +254,14 @@ html { scroll-behavior: smooth; }
 .em-aberto h3 { margin-top: 0 !important; color: #6d28d9; }
 @media (prefers-color-scheme: dark) { .em-aberto h3 { color: #c4b5fd; } }
 .em-aberto p { margin: 8px 0 0; }
+
+/* item 10: verificações do lacre eletrônico, em cartões que cabem no celular */
+.checagens { list-style: none; padding: 0 !important; margin: 10px 0; display: grid; gap: 8px; }
+.checagens li { margin: 0; background: var(--fundo); border-radius: 12px; padding: 10px 12px; }
+.checagens li > p { margin: 0 0 8px; font-weight: 600; }
+.checagens .placar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.checagens .placar span { display: flex; flex-direction: column; align-items: center; background: var(--cartao, #fff); border: 1px solid var(--borda); border-radius: 8px; padding: 4px 2px; text-align: center; }
+.checagens .placar small { font-size: 11px; color: var(--suave); }
+.checagens .placar b { font-size: 13px; color: #15803d; white-space: nowrap; }
+.checagens .placar small { white-space: nowrap; }
+@media (prefers-color-scheme: dark) { .checagens .placar b { color: #4ade80; } }

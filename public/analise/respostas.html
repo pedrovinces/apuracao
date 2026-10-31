@@ -35,6 +35,7 @@
       <a href="#integridade">7. O que dizem os testes oficiais das urnas</a>
       <a href="#outros">8. Outras afirmações do relatório (Benford, 72 horas)</a>
       <a href="#poucas-urnas">9. Urnas com o código de programação alterado decidiriam a eleição?</a>
+      <a href="#alteracao-central">10. Alguém no TSE poderia alterar os números antes de publicar?</a>
       <a href="#glossario">Palavras usadas nesta página</a>
     </nav>
   </section>
@@ -318,6 +319,58 @@
     </details>
   </article>
 
+  <article class="resposta" id="alteracao-central">
+    <h2>10. Alguém no TSE poderia alterar os números antes de publicar?</h2>
+    <blockquote>"E se um operador, ou uma ferramenta de inteligência artificial, alterasse os resultados dentro do TSE antes de colocá-los no site de resultados?"</blockquote>
+    <p class="veredito info">Uma alteração assim seria descoberta; na amostra conferida, os lacres e os números batem</p>
+    <p class="curta"><b>Em poucas palavras:</b> o resultado de cada urna não nasce no TSE. Ele nasce <b>na própria urna</b>, que imprime o boletim na seção, diante de mesários e fiscais, <b>antes</b> de qualquer transmissão, e lacra o arquivo eletrônico com uma <b>assinatura digital</b> que só aquela urna sabe fazer. Mexer no número depois, dentro do TSE, deixaria duas marcas: o número publicado ficaria diferente do papel fotografado na seção, e o lacre eletrônico deixaria de fechar. Conferimos o lacre de <b>600 urnas</b> sorteadas e das <b>100</b> que mais destoaram das vizinhas: <b>nas 700, o lacre confere e os votos dentro do arquivo lacrado são iguais aos publicados</b>.</p>
+    <details class="completa">
+      <summary>Ler a explicação completa</summary>
+
+    <h3>Passo a passo</h3>
+    <ol>
+      <li><b>Por que as outras respostas desta página não bastam aqui.</b> Todas as análises anteriores usam os números que o TSE publicou. Se esses números tivessem sido mexidos antes da publicação, as análises estariam examinando números já mexidos. Para essa pergunta é preciso uma prova que <b>não dependa</b> dos computadores do TSE.<p class="analogia"><b>💡 Pense assim:</b> se você desconfia que o banco errou o seu saldo, não adianta conferir o extrato com o próprio extrato. Você confere com os seus recibos, aqueles que saíram da máquina na hora em que você fez cada operação.</p></li>
+      <li><b>A prova que nasce fora do TSE: o boletim impresso.</b> Quando a votação termina, cada urna imprime o boletim com o total de cada candidato. Ele é assinado pelos mesários, afixado na porta da seção e entregue em cópia aos fiscais dos partidos, que costumam fotografá-lo. Isso acontece <b>antes</b> de o resultado ser enviado ao TSE. São mais de 499 mil boletins espalhados por todo o país, em papel, nas mãos de milhares de pessoas que não trabalham no TSE.<p class="analogia"><b>💡 Pense assim:</b> é o placar do estádio no apito final, fotografado por 50 mil torcedores dos dois times. Se a TV mostrasse depois um placar diferente, as fotos desmentiriam na hora. Para esconder a troca, seria preciso apagar as fotos de todos os torcedores, de todos os estádios.</p></li>
+      <li><b>O QR code do boletim.</b> O boletim impresso traz QR codes com os mesmos números, mais um código de segurança gerado pela urna. Qualquer pessoa pode ler esses QR codes com o aplicativo da Justiça Eleitoral (o <b>Boletim na Mão</b>) ou com aplicativos independentes, e guardar o resultado da seção no celular, sem depender do site.</li>
+      <li><b>O lacre eletrônico de cada urna.</b> Além do papel, a urna grava o boletim num arquivo e o assina com uma <b>assinatura digital</b>. Cada urna tem uma chave própria, guardada num chip dentro dela, e um certificado público que permite a qualquer pessoa conferir a assinatura. Se um único número do arquivo mudar depois de assinado, a assinatura deixa de conferir. E quem não tem a chave daquela urna não consegue fabricar uma assinatura nova que confira.<p class="analogia"><b>💡 Pense assim:</b> é o selo de cera das cartas antigas, carimbado com um anel que só o remetente tinha. Abrir a carta e trocar uma palavra quebra o selo, e ninguém consegue refazê-lo sem o anel. O certificado público é como um molde do anel que fica com todo mundo: serve para conferir o selo, mas não para carimbar.</p></li>
+      <li><b>O que conferimos.</b> Sorteamos 300 urnas do 1º turno e 300 do 2º turno, em todos os estados, e juntamos as 100 seções que mais destoaram das vizinhas no teste do item 5 (as que mais chamariam atenção se houvesse alteração). Para cada uma, baixamos do arquivo público do TSE o boletim eletrônico e o arquivo de assinaturas, e conferimos quatro coisas:
+        <ul class="checagens"><li><p>✓ O arquivo do boletim é exatamente o que a urna lacrou (resumo SHA-512 igual)</p><div class="placar"><span><small>1º turno</small><b>300 de 300</b></span><span><small>2º turno</small><b>300 de 300</b></span><span><small>Destoantes</small><b>100 de 100</b></span></div></li><li><p>✓ O lacre da urna confere no boletim e na lista de todos os arquivos dela</p><div class="placar"><span><small>1º turno</small><b>300 de 300</b></span><span><small>2º turno</small><b>300 de 300</b></span><span><small>Mais destoantes</small><b>100 de 100</b></span></div></li><li><p>✓ O certificado da urna foi emitido por uma autoridade das urnas do TSE</p><div class="placar"><span><small>1º turno</small><b>300 de 300</b></span><span><small>2º turno</small><b>300 de 300</b></span><span><small>Mais destoantes</small><b>100 de 100</b></span></div></li><li><p>✓ Os votos de Presidente dentro do arquivo lacrado são iguais aos publicados (os do painel)</p><div class="placar"><span><small>1º turno</small><b>300 de 300</b></span><span><small>2º turno</small><b>300 de 300</b></span><span><small>Mais destoantes</small><b>100 de 100</b></span></div></li></ul>
+        <p>Resultado: <b>nenhuma diferença</b> em nenhuma das 700 urnas. Elas ficam em 485 municípios de todos os estados e do DF e são de todos os modelos em uso (2013, 2015, 2020 e 2022). No 2º turno foram comparados os votos de Lula, de Flávio, brancos e nulos; no 1º turno, os votos de Lula e de Flávio.</p><p class="analogia"><b>💡 Pense assim:</b> é como um inspetor que abre caixas de remédio sorteadas na farmácia e confere três coisas: o lacre está inteiro, o lacre é do fabricante certo e o comprimido dentro é o que a bula diz. E, para ter certeza de que o teste funciona, ele também testa uma caixa que ele mesmo abriu de propósito: essa tem de ser reprovada.</p></li>
+      <li><b>O teste de controle.</b> Para saber se a conferência funciona de verdade, e não aprova qualquer coisa, repetimos a verificação de cada urna trocando um único bit do arquivo (a menor alteração possível, como trocar um 0 por 1). Nas 700 urnas, a versão alterada foi <b>recusada</b>, como deveria. Ou seja: a conferência distingue um arquivo intacto de um arquivo mexido, mesmo quando a diferença é mínima.</li>
+      <li><b>A apuração paralela.</b> Como os boletins são públicos, qualquer partido, jornal, universidade ou grupo de cidadãos pode juntar fotos e QR codes e somar por conta própria. Se o número publicado de uma seção fosse diferente do boletim impresso, a diferença apareceria ali, seção por seção, com a foto como prova.<p class="analogia"><b>💡 Pense assim:</b> é um condomínio em que cada morador guarda o recibo da própria conta de luz. Se a administradora publicasse um total diferente da soma dos recibos, bastaria alguns moradores compararem para o erro aparecer, e cada recibo aponta exatamente onde.</p></li>
+    </ol>
+
+    <h3>Faça você mesmo: compare o boletim da sua seção com o painel</h3>
+    <ol class="passos-leitor">
+      <li><b>Descubra sua zona e sua seção.</b> Estão no título de eleitor e no aplicativo e-Título.</li>
+      <li><b>Consiga o boletim da sua seção.</b> Pode ser a foto que você tirou na porta da seção, a de um fiscal de partido ou de um grupo da sua cidade, ou a leitura do QR code pelo aplicativo Boletim na Mão.</li>
+      <li><b>Abra a sua seção no painel.</b> Na <a href="./">página de análise</a>, escolha o seu estado no seletor do alto, digite o nome do seu município na busca, desça até a lista de seções e toque na linha da sua zona e seção.</li>
+      <li><b>Compare os números.</b> No cartão da seção, toque em <b>"Ver números exatos"</b> e compare a coluna do 2º turno com o boletim: votos de Lula (13), de Flávio (22), brancos, nulos e quantas pessoas compareceram. Tem de ser igual, número por número. Dá para fazer o mesmo com o boletim do 1º turno.</li>
+      <li><b>Se quiser ir além.</b> No fim da página da seção, o quadro <b>"Conferir no TSE"</b> abre os arquivos oficiais daquela urna, inclusive o boletim eletrônico assinado que conferimos acima.</li>
+      <li><b>Se encontrar diferença.</b> Guarde a foto (com data e local), anote zona, seção e município, e leve a um partido, ao Ministério Público Eleitoral ou à ouvidoria da Justiça Eleitoral. Uma única diferença comprovada entre o papel e o número publicado seria uma prova forte, porque o papel saiu da urna antes de qualquer transmissão.</li>
+    </ol>
+
+    <div class="em-aberto">
+      <h3>Ponto em aberto: o que o lacre não diz</h3>
+      <p>O lacre eletrônico prova que o arquivo saiu de uma urna com certificado das autoridades das urnas do TSE e que ninguém mexeu nele depois. Ele <b>não</b> diz se o programa da urna gravou corretamente o voto digitado: essa é a pergunta do item 9, que depende do teste de integridade e da inspeção do código de programação. A segurança do lacre também depende de a chave de cada urna ficar guardada no chip, como previsto no projeto do sistema; isso faz parte das auditorias oficiais e não dá para conferir pelos arquivos públicos.</p>
+      <p class="analogia"><b>💡 Pense assim:</b> o selo de cera garante que a carta chegou como saiu das mãos do remetente. Ele não garante que o remetente escreveu a verdade. São duas perguntas diferentes, e cada uma tem o seu teste.</p>
+    </div>
+    <h3>Onde esta resposta tem limites</h3>
+    <ul class="limites">
+      <li>Conferimos uma amostra (700 urnas, <a href="dados/assinaturas.json">lista completa aqui</a>), não as 499 mil. A amostra mostra que, nas urnas sorteadas, lacre e números batem; a garantia para o país inteiro vem de qualquer pessoa poder conferir qualquer urna, com o papel ou com o arquivo.</li>
+      <li>Os certificados das autoridades das urnas (AC UE2020, AC UE2022 e AC URNA) vêm da documentação técnica oficial do TSE sobre o formato dos arquivos. Como os sites do TSE bloqueiam a leitura automática, usamos uma cópia pública desse pacote no GitHub. Não conferimos o elo acima dessas autoridades (a autoridade raiz).</li>
+      <li>Cada arquivo tem duas assinaturas. Conferimos a de hardware, feita pelo chip da urna com algoritmos públicos (Ed521 nas urnas de 2020 e 2022, ECDSA P-521 nas mais antigas). A outra, de software, usa um algoritmo de uso do governo que não é publicado, e não foi conferida.</li>
+      <li>O arquivo de assinaturas de 2026 tem uma pequena diferença de organização em relação à especificação publicada (o modelo da urna vem no fim do arquivo). O leitor que escrevemos trata as duas formas, e a conferência de cada assinatura confirma que a leitura está certa: uma leitura errada faria a assinatura falhar.</li>
+      <li>Esta conferência compara o arquivo assinado pela urna com os números publicados. A comparação com o boletim em papel depende das fotos, que não estão nos arquivos públicos; por isso o passo a passo acima.</li>
+    </ul>
+    <p class="confira"><a href="./?aba=vizinhanca">Ver o teste de vizinhança</a><a href="#poucas-urnas">Ver o item 9 (código de programação)</a></p>
+      <div class="fim-resposta">
+        <button type="button" class="botao-fechar" data-fechar>Fechar resposta ↑</button>
+        <a class="botao-topo" href="#topo">Voltar ao topo</a>
+      </div>
+    </details>
+  </article>
+
   <section class="resposta" id="glossario">
     <h2>Palavras usadas nesta página</h2>
     <p class="nota-pequena">Passe o mouse ou toque numa palavra para ver a explicação. Ao longo das respostas, essas palavras aparecem sublinhadas com pontilhado.</p>
@@ -330,6 +383,9 @@
       <dt>Ponto percentual (p.p.)</dt><dd>Diferença entre dois percentuais. De 45% para 51% são 6 pontos percentuais.</dd>
       <dt>Correlação</dt><dd>Medida de quanto duas coisas andam juntas, de −1 a +1. Perto de zero quer dizer que não andam juntas.</dd>
       <dt>Amostra e margem de erro</dt><dd>Quando não dá para olhar tudo, sorteia-se uma parte. A margem de erro indica até quanto o resultado real tende a ficar acima ou abaixo da estimativa.</dd>
+      <dt>Assinatura digital</dt><dd>Um lacre eletrônico: um código que a urna calcula a partir do arquivo com uma chave secreta só dela. Qualquer pessoa confere com o certificado público; se um número do arquivo mudar, o lacre deixa de conferir.</dd>
+      <dt>Certificado digital</dt><dd>Documento eletrônico público que diz a quem pertence uma chave de assinatura e quem a emitiu. Serve para conferir a assinatura, não para fazê-la.</dd>
+      <dt>QR code</dt><dd>O quadradinho de pontos impresso no boletim, que o celular lê. Traz os números da seção e um código de segurança da urna.</dd>
       <dt>Pior caso</dt><dd>A hipótese mais desfavorável possível para uma conclusão. Se a conclusão se mantém até no pior caso, ela é sólida.</dd>
     </dl>
   </section>
@@ -364,6 +420,7 @@ const PADROES = [
   ['Seção', /\bseç(?:ão|ões)\b/i], ['Local de votação', /locais? de votação/i], ['Boletim de urna', /boletins? de urna|\bboletim\b/i],
   ['Log da urna', /\blogs?\b/i], ['Ponto percentual (p.p.)', /pontos? percentua(?:l|is)|\bp\.p\.|\d[\d.,]*\s+pontos?\b/i], ['Correlação', /correlação/i],
   ['Amostra e margem de erro', /margem de erro|\bamostra\b/i], ['Pior caso', /pior caso/i],
+  ['Assinatura digital', /assinaturas? digita(?:l|is)/i], ['Certificado digital', /\bcertificados?\b/i], ['QR code', /QR codes?/i],
 ];
 function marcarTermos(raiz) {
   const usados = new Set();
