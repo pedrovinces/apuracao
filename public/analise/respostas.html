@@ -362,12 +362,12 @@ document.addEventListener('click', (ev) => {
 const DEF = new Map([...document.querySelectorAll('.glossario dt')].map((dt) => [dt.textContent.trim(), dt.nextElementSibling.textContent.trim()]));
 const PADROES = [
   ['Seção', /\bseç(?:ão|ões)\b/i], ['Local de votação', /locais? de votação/i], ['Boletim de urna', /boletins? de urna|\bboletim\b/i],
-  ['Log da urna', /\blogs?\b/i], ['Ponto percentual (p.p.)', /pontos? percentua(?:l|is)|\bpontos?\b|\bp\.p\./i], ['Correlação', /correlação/i],
+  ['Log da urna', /\blogs?\b/i], ['Ponto percentual (p.p.)', /pontos? percentua(?:l|is)|\bp\.p\.|\d[\d.,]*\s+pontos?\b/i], ['Correlação', /correlação/i],
   ['Amostra e margem de erro', /margem de erro|\bamostra\b/i], ['Pior caso', /pior caso/i],
 ];
 function marcarTermos(raiz) {
   const usados = new Set();
-  const andar = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.parentElement.closest('h2, h3, summary, a, button, blockquote, .veredito, .confira, .fim-resposta, .termo') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT) });
+  const andar = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.parentElement.closest('h2, h3, summary, a, button, blockquote, .veredito, .confira, .fim-resposta, .termo, .analogia') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT) });
   const nos = []; while (andar.nextNode()) nos.push(andar.currentNode);
   for (let no of nos) {
     for (const [termo, re] of PADROES) {
