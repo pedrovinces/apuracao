@@ -85,6 +85,8 @@ python tools/analise/extrair_bweb.py links2022.txt compact2022
 python tools/analise/estudos.py compact bio compact2022 public/analise/dados/estudos.json
 # lacre eletrônico (assinatura digital) de 300 urnas sorteadas por turno + as 100 mais destoantes da vizinhança
 # bu.asn1: especificação oficial do TSE (pacote formato-arquivos-bu-rdv-ass-digital-v2); requer asn1tools e cryptography
+# horário de encerramento: a "escada", o teste dentro da mesma escola e a mesma seção nos dois turnos
+python tools/analise/fechamento.py compact compact2022 public/analise/dados/fechamento.json
 python tools/analise/assinaturas.py compact spec/bu.asn1 public/analise/dados/assinaturas.json 300 public/analise/dados/estudos.json
 ```
 

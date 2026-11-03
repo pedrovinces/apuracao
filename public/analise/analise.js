@@ -376,8 +376,56 @@ async function abaHorario() {
     </section>
     <section class="cartao"><h2>Quando as urnas fecharam</h2><p class="nota-pequena">Número de seções por horário de encerramento (Brasília, faixas de 5 min, escala logarítmica). Antes de 16:30 tudo entra na primeira barra.</p><div id="g-encerramento" class="grafico"></div></section>
     <section class="cartao"><h2>Resultado por horário de encerramento</h2><p class="nota-pequena">Percentual de Lula no 2º turno entre as seções de cada faixa. Seções que fecham mais tarde costumam ter fila maior (mais eleitores, áreas urbanas e periferias), e isso também muda o perfil do voto: a relação é correlação, não causa.</p><div id="g-resultado" class="grafico"></div></section>
+    ${await cartaoEscada()}
     ${est.uf ? await tabelaProrrogadas() : tabelaHorarioUfs()}`;
-  graficoEncerramento(); graficoResultado();
+  graficoEncerramento(); graficoResultado(); graficoEscada();
+  if (location.hash === '#escada') $('#escada')?.scrollIntoView({ block: 'start' }); // link vindo da página de respostas
+}
+// "Escada" do horário: no país inteiro, urnas que fecham mais tarde votam mais em Lula; dentro da
+// mesma escola (lugar fixo, só o horário varia) a escada some. Dados: tools/analise/fechamento.py.
+let FE = null;
+async function cartaoEscada() {
+  FE ||= await json('dados/fechamento.json?v=dev');
+  const sp = est.uf === 'SP', nome = sp ? 'de São Paulo' : 'do Brasil';
+  const lim = FE.limiar['2026_t2_1701'], ms = FE.mesma_secao, nec = FE.necessario;
+  const n = (v, c = 2) => (v > 0 ? '+' : '') + v.toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c });
+  return `<section class="cartao" id="escada"><h2>Fechar tarde muda o voto? A escada e a mesma escola</h2>
+    <p class="nota-pequena">As seções ${nome} foram ordenadas pelo horário de encerramento e divididas em 10 grupos do mesmo tamanho (1 = as primeiras a fechar). A linha vermelha mostra quanto o percentual de Lula de cada grupo fica acima ou abaixo da média: sobe como uma escada. A linha verde faz a mesma conta <b>dentro de cada escola</b>, comparando cada seção com as vizinhas do mesmo prédio: o lugar fica fixo e só o horário varia. Se fechar depois das 17:01 desviasse votos, a linha verde subiria também.${sp || (!est.uf && !est.regiao) ? '' : ' Este gráfico usa o Brasil inteiro.'}</p>
+    <div id="g-escada" class="grafico"></div>
+    <ul class="impacto">
+      <li><span>Mesma escola: Lula nas seções que fecharam depois de 17:01 menos nas que fecharam antes (${fmt.format(lim.locais)} escolas)</span><b>${n(lim.dif, 3)} p.p. <small>± ${lim.margem95.toLocaleString('pt-BR')}</small></b></li>
+      <li><span>Mínimo que uma alteração restrita às urnas fechadas depois de 17:01 precisaria para virar o resultado</span><b>${n(nec.lula_pp)} p.p.</b></li>
+      <li><span>Mesma seção, ganho de Lula do 1º ao 2º turno: fechou cedo nos dois turnos × cedo no 1º e tarde no 2º (limite 17:02)</span><b>${n(ms.cedo_cedo.lula_pp)} × ${n(ms.cedo_tarde.lula_pp)} p.p.</b></li>
+    </ul>
+    <p class="nota-pequena">A escada aparece também no 1º turno de 2026 (quando Flávio venceu) e nos dois turnos de 2022: urnas que fecham tarde são as maiores, com fila às 17h, e ficam em regiões onde Lula vai melhor. <a href="respostas.html#escada-horario">Explicação completa →</a></p>
+  </section>`;
+}
+function graficoEscada() {
+  const el = $('#g-escada'); if (!el || !FE) return;
+  const chave = est.uf === 'SP' ? '2026_t2_SP' : '2026_t2';
+  const d = FE.decis[chave], esc_ = FE.mesma_escola[chave];
+  const br = d.grupos.map((g, i) => [i + 1, g.lula - d.lula]), loc = esc_.grupos.map((g, i) => [i + 1, g.lula_pp]);
+  const W = el.clientWidth || 340, H = 240, m = { t: 14, r: 12, b: 34, l: 44 };
+  const lo = Math.min(-2, d3.min(br, (v) => v[1])) - 0.5, hi = Math.max(FE.necessario.lula_pp + 1, d3.max(br, (v) => v[1])) + 0.5;
+  const x = d3.scaleLinear().domain([1, 10]).range([m.l + 6, W - m.r - 6]);
+  const y = d3.scaleLinear().domain([lo, hi]).range([H - m.b, m.t]);
+  const svg = d3.select(el).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('class', 'svg-grafico');
+  svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(10).tickFormat(d3.format('d'))).call((s) => s.selectAll('text').attr('font-size', 10));
+  svg.append('text').attr('x', (W + m.l) / 2).attr('y', H - 4).attr('text-anchor', 'middle').attr('font-size', 10).attr('fill', 'currentColor').text('grupo: 1 = fechou primeiro · 10 = fechou por último');
+  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(5).tickFormat((v) => (v > 0 ? '+' : '') + v + ' p.p.')).call((s) => s.selectAll('text').attr('font-size', 9));
+  svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'currentColor').attr('opacity', 0.35);
+  const yn = y(FE.necessario.lula_pp);
+  svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', yn).attr('y2', yn).attr('stroke', '#d97706').attr('stroke-dasharray', '5 4');
+  svg.append('text').attr('x', m.l + 4).attr('y', yn - 4).attr('font-size', 9).attr('fill', '#d97706').text('mínimo para virar o resultado');
+  const lin = d3.line().x((v) => x(v[0])).y((v) => y(v[1]));
+  svg.append('path').datum(br).attr('d', lin).attr('fill', 'none').attr('stroke', COR[13]).attr('stroke-width', 2.5);
+  svg.append('path').datum(loc).attr('d', lin).attr('fill', 'none').attr('stroke', '#15803d').attr('stroke-width', 2.5);
+  svg.append('g').selectAll('circle').data(br).join('circle').attr('cx', (v) => x(v[0])).attr('cy', (v) => y(v[1])).attr('r', 3.5).attr('fill', COR[13])
+    .append('title').text((v) => { const g = d.grupos[v[0] - 1]; return `Grupo ${v[0]} (${hora(g.de / 60)}–${hora(g.ate / 60)}): Lula ${pct(g.lula)}, ${pp(v[1])} vs média`; });
+  svg.append('g').selectAll('rect').data(loc).join('rect').attr('x', (v) => x(v[0]) - 3).attr('y', (v) => y(v[1]) - 3).attr('width', 6).attr('height', 6).attr('fill', '#15803d')
+    .append('title').text((v) => `Grupo ${v[0]} dentro da escola: Lula ${pp(v[1])} vs as vizinhas`);
+  svg.append('text').attr('x', W - m.r).attr('y', y(br[9][1]) - 8).attr('text-anchor', 'end').attr('font-size', 10).attr('fill', COR[13]).text(est.uf === 'SP' ? 'São Paulo inteiro' : 'Brasil inteiro');
+  svg.append('text').attr('x', W - m.r).attr('y', y(loc[9][1]) + 14).attr('text-anchor', 'end').attr('font-size', 10).attr('fill', '#15803d').text('mesma escola');
 }
 function tabelaHorarioUfs() {
   const linhas = escopoUfs().filter((u) => u !== 'ZZ').map((uf) => ({ uf, p: aggUf(uf).p || {}, t2: aggUf(uf).t2 || {} }))
